@@ -286,6 +286,32 @@ async function fetchNickname(cookie: string, uin: string) {
     }
 }
 
+function stripHtml(text: string) {
+    return String(text || "")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function formatQqLoginError(raw: string, code?: string) {
+    const text = stripHtml(raw);
+    if (
+        code === "22009" ||
+        text.includes("登录异常") ||
+        text.includes("号码登录异常")
+    ) {
+        return "QQ 风控拦截了密码登录。请改用 Cookie 登录：在浏览器打开 y.qq.com 登录后，复制 Cookie 粘贴到下方。";
+    }
+    if (text.includes("密码") && text.includes("错误")) {
+        return "QQ 号或密码错误";
+    }
+    return text || "登录失败，请检查 QQ 号和密码";
+}
+
 /** QQ 号 + 密码登录（ptlogin），成功后换取 QQ 音乐 Cookie */
 export async function loginQqByPassword(usernameRaw: string, password: string) {
     const uin = usernameRaw.trim().replace(/^o+/i, "");
@@ -298,11 +324,14 @@ export async function loginQqByPassword(usernameRaw: string, password: string) {
     }
 
     let cookie = "";
+    // 使用较新的桌面 UA + js_ver，降低部分风控误判
     const commonHeaders = {
         "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         Referer: "https://xui.ptlogin2.qq.com/",
+        Accept: "*/*",
     };
+    const jsVer = 24112114;
 
     // 1) 拿 login_sig
     const frame = await axios.get("https://xui.ptlogin2.qq.com/cgi-bin/xlogin", {
@@ -332,7 +361,7 @@ export async function loginQqByPassword(usernameRaw: string, password: string) {
             pt_vcode: 1,
             uin,
             appid: APPID,
-            js_ver: 23071316,
+            js_ver: jsVer,
             js_type: 1,
             login_sig: loginSig,
             u1: U1,
@@ -351,7 +380,7 @@ export async function loginQqByPassword(usernameRaw: string, password: string) {
     const checkParts = parseQuoted(String(check.data || ""));
     if (checkParts[0] !== "0") {
         throw new Error(
-            "账号需要验证码或环境异常，请稍后再试，或先在网页端完成安全验证",
+            "账号需要验证码或环境异常。请先在浏览器打开 y.qq.com 完成安全验证，或改用 Cookie 登录。",
         );
     }
     const verifycode = checkParts[1];
@@ -381,7 +410,7 @@ export async function loginQqByPassword(usernameRaw: string, password: string) {
             from_ui: 1,
             ptlang: 2052,
             action: `3-9-${Date.now()}`,
-            js_ver: 23071316,
+            js_ver: jsVer,
             js_type: 1,
             login_sig: loginSig,
             pt_uistyle: 40,
@@ -398,7 +427,7 @@ export async function loginQqByPassword(usernameRaw: string, password: string) {
     cookie = mergeCookie(cookie, parseSetCookie(login.headers));
     const loginParts = parseQuoted(String(login.data || ""));
     if (loginParts[0] !== "0") {
-        throw new Error(loginParts[4] || "登录失败，请检查 QQ 号和密码");
+        throw new Error(formatQqLoginError(loginParts[4], loginParts[0]));
     }
     const jumpUrl = loginParts[2];
     const nicknameFromLogin = loginParts[5] || "";

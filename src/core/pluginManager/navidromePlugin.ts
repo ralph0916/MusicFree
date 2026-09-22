@@ -255,6 +255,33 @@ export async function isSongInNavidromePlaylist(
     };
 }
 
+export async function getNavidromePlaylistIdsContainingSongs(
+    songIds: string[],
+) {
+    if (!songIds.length) {
+        return new Set<string>();
+    }
+    const playlists = await getNavidromePlaylists();
+    const target = songIds.map(String);
+    const containing = new Set<string>();
+    for (const pl of playlists) {
+        if (pl.title === "全部" || pl.id === "全部") {
+            continue;
+        }
+        try {
+            const { data } = await request("getPlaylist", { id: pl.id });
+            const entries = data.playlist?.entry ?? [];
+            const idSet = new Set(entries.map((e: any) => String(e.id)));
+            if (target.every(id => idSet.has(id))) {
+                containing.add(String(pl.id));
+            }
+        } catch {
+            // ignore
+        }
+    }
+    return containing;
+}
+
 export async function addSongsToNavidromePlaylist(
     playlistId: string,
     songIds: string[],
@@ -404,7 +431,8 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
             super: 0,
         };
         const maxBitRate = maxBitRateMap[quality] ?? 0;
-        // 不使用 estimateContentLength：转码流长度不准时 ExoPlayer 会首播报错并跳下一首
+        // 原文件(maxBitRate=0)带 estimateContentLength，便于 ExoPlayer 拿到时长与快进；
+        // 转码流长度不准，不带该参数，避免首播失败。
         const url = buildUrl(
             config.url,
             "stream",
@@ -412,6 +440,9 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
             {
                 id: musicItem.id,
                 maxBitRate,
+                ...(maxBitRate === 0
+                    ? { estimateContentLength: true }
+                    : {}),
                 _: Date.now(),
             },
             { omitJsonFormat: true },

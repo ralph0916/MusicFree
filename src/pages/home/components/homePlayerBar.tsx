@@ -34,10 +34,23 @@ function HomePlayerBar() {
     const navigate = useNavigate();
     const paused = musicIsPaused(musicState);
 
-    const ratio =
-        progress?.duration > 0
-            ? Math.min(1, Math.max(0, progress.position / progress.duration))
-            : 0;
+    const ratio = (() => {
+        const duration =
+            progress?.duration > 0
+                ? progress.duration
+                : Number(musicItem?.duration) || 0;
+        if (duration <= 0) {
+            return 0;
+        }
+        return Math.min(1, Math.max(0, (progress?.position || 0) / duration));
+    })();
+
+    const endTime = (() => {
+        if (progress?.duration > 0) {
+            return progress.duration;
+        }
+        return Number(musicItem?.duration) || 0;
+    })();
 
     const lyricText =
         lyricItem?.lrc?.trim() ||
@@ -118,7 +131,7 @@ function HomePlayerBar() {
                                 .alpha(0.45)
                                 .toString()}
                             style={styles.time}>
-                            {formatTime(progress?.duration)}
+                            {formatTime(endTime)}
                         </ThemeText>
                     </View>
                 </View>

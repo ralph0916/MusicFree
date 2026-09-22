@@ -2,6 +2,7 @@ import {
     emptyFunction,
     localPluginHash,
     localPluginPlatform,
+    navidromePluginPlatform,
 } from "@/constants/commonConst";
 import pathConst from "@/constants/pathConst";
 import {
@@ -153,8 +154,8 @@ class PluginManager implements IPluginManager, IInjectable {
                 }
             }
 
-            // 内置 Navidrome / 网易云 / QQ 音乐
-            const builtins = [navidromePlugin, neteasePlugin, qqPlugin];
+            // 内置音源：unshift 逆序注入，保证默认顺序为 Navidrome → 网易云 → QQ
+            const builtins = [qqPlugin, neteasePlugin, navidromePlugin];
             for (const builtin of builtins) {
                 if (!allPlugins.some(p => p.name === builtin.name)) {
                     allPlugins.unshift(builtin);
@@ -549,11 +550,18 @@ class PluginManager implements IPluginManager, IInjectable {
      */
     getSortedSearchablePlugins(supportedSearchType?: ICommon.SupportMediaType) {
         const order = pluginMeta.getPluginOrder();
+        const rank = (name: string) => {
+            if (order[name] !== undefined) {
+                return order[name];
+            }
+            // 未手动排序时，Navidrome 默认第一
+            if (name === navidromePluginPlatform) {
+                return -1;
+            }
+            return Infinity;
+        };
         return [...this.getSearchablePlugins(supportedSearchType)].sort(
-            (a, b) =>
-                (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity) < 0
-                    ? -1
-                    : 1,
+            (a, b) => (rank(a.name) < rank(b.name) ? -1 : 1),
         );
     }
 

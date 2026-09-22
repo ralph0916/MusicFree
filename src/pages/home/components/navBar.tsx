@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
 import useColors from "@/hooks/useColors";
 import ThemeText from "@/components/base/themeText";
@@ -14,20 +14,35 @@ export default function NavBar() {
     const { t } = useI18N();
     const navigate = useNavigate();
 
+    const openDrawer = () => {
+        navigation?.openDrawer();
+    };
+
     return (
         <View style={styles.appbar}>
-            <IconButton
-                accessibilityLabel={t("home.openSidebar.a11y")}
-                name="bars-3"
+            <Pressable
+                onPress={openDrawer}
+                hitSlop={16}
                 style={styles.menu}
-                color={colors.text}
-                onPress={() => {
-                    navigation?.openDrawer();
-                }}
-            />
-            <ThemeText fontSize="title" fontWeight="bold" style={styles.brand}>
-                RalphMusic
-            </ThemeText>
+                accessibilityRole="button"
+                accessibilityLabel={t("home.openSidebar.a11y")}>
+                <IconButton
+                    accessibilityLabel={t("home.openSidebar.a11y")}
+                    name="bars-3"
+                    color={colors.text}
+                    onPress={openDrawer}
+                />
+            </Pressable>
+            <Pressable
+                style={styles.brand}
+                onPress={openDrawer}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel={t("home.openSidebar.a11y")}>
+                <ThemeText fontSize="title" fontWeight="bold">
+                    RalphMusic
+                </ThemeText>
+            </Pressable>
             <IconButton
                 accessibilityLabel="搜索"
                 name="magnifying-glass"
@@ -51,6 +66,8 @@ const styles = StyleSheet.create({
     brand: {
         marginLeft: rpx(8),
         flex: 1,
+        justifyContent: "center",
+        minHeight: rpx(88),
     },
     menu: {
         marginLeft: rpx(16),

@@ -809,11 +809,30 @@ class TrackPlayer extends EventEmitter<{
         if (!clonedTrack) {
             return;
         }
+        // 流媒体若无 Content-Length，播放器 duration 可能为 0；用元数据时长兜底，保证进度条/快进可用
+        const metaDuration = Number((track as any).duration) || 0;
+        if (metaDuration > 0 && !(Number(clonedTrack.duration) > 0)) {
+            clonedTrack.duration = metaDuration;
+        }
         await ReactNativeTrackPlayer.setQueue([clonedTrack, this.getFakeNextTrack()]);
         PersistStatus.set("music.musicItem", track as IMusic.IMusicItem);
         PersistStatus.set("music.progress", 0);
         if (autoPlay) {
             await ReactNativeTrackPlayer.play();
+        }
+        // 部分播放器启动后仍读不到时长，补写一次 metadata
+        if (metaDuration > 0) {
+            try {
+                const active = await ReactNativeTrackPlayer.getActiveTrack();
+                if (active && !(Number(active.duration) > 0)) {
+                    await ReactNativeTrackPlayer.updateMetadataForTrack(0, {
+                        ...active,
+                        duration: metaDuration,
+                    });
+                }
+            } catch {
+                // ignore
+            }
         }
     }
 

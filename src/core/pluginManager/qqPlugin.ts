@@ -451,6 +451,38 @@ export async function isQqSongLiked(musicId: string) {
     return likedIdCache.ids.has(String(musicId));
 }
 
+export async function getQqPlaylistIdsContainingSongs(songIds: string[]) {
+    if (!songIds.length || !isQqLoggedIn()) {
+        return new Set<string>();
+    }
+    const playlists = await getQqUserPlaylists();
+    const target = songIds.map(String);
+    const containing = new Set<string>();
+    for (const pl of playlists) {
+        try {
+            const data = await qqGet(
+                "https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg",
+                {
+                    type: 1,
+                    utf8: 1,
+                    disstid: pl.id,
+                    format: "json",
+                },
+            );
+            const songs = data?.cdlist?.[0]?.songlist || [];
+            const idSet = new Set(
+                songs.map((s: any) => String(s.id || s.songid || s.mid || "")),
+            );
+            if (target.every(id => idSet.has(id))) {
+                containing.add(String(pl.id));
+            }
+        } catch {
+            // ignore
+        }
+    }
+    return containing;
+}
+
 export async function createQqPlaylist(name: string) {
     if (!isQqLoggedIn()) {
         throw new Error("请先登录 QQ 音乐账号");

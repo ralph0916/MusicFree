@@ -267,22 +267,39 @@ const neteasePluginDefine: IPlugin.IPluginDefine = {
         if (page > 1) {
             return { isEnd: true, musicList: [] };
         }
-        const { data } = await axios.get(
-            "https://music.163.com/api/playlist/detail",
+        // 用户歌单 / 榜单统一走 weapi，旧版 /api/playlist/detail 常返回空 tracks
+        const data = await neteaseWeapiPost(
+            "https://music.163.com/weapi/v3/playlist/detail",
             {
-                params: { id },
-                headers: getNeteaseHeaders(),
-                timeout: 15000,
+                id,
+                n: 1000,
+                s: 8,
             },
         );
-        const tracks = data?.playlist?.tracks || [];
+        const playlist = data?.playlist || {};
+        let tracks = playlist.tracks || [];
+        // 超大歌单 tracks 可能不全，用 trackIds 补齐详情
+        const trackIds: string[] = (playlist.trackIds || [])
+            .map((t: any) => String(t.id || t))
+            .filter(Boolean);
+        if (trackIds.length > tracks.length) {
+            const need = trackIds.slice(0, 500);
+            const detail = await neteaseWeapiPost(
+                "https://music.163.com/weapi/v3/song/detail",
+                {
+                    c: JSON.stringify(need.map(i => ({ id: i }))),
+                    ids: JSON.stringify(need),
+                },
+            );
+            tracks = detail?.songs || tracks;
+        }
         return {
             isEnd: true,
             musicList: tracks.map(mapSong),
             topListItem: {
                 ...topListItem,
-                title: data?.playlist?.name || topListItem.title,
-                coverImg: data?.playlist?.coverImgUrl || "",
+                title: playlist.name || topListItem.title,
+                coverImg: playlist.coverImgUrl || "",
             },
         };
     },
@@ -415,6 +432,46 @@ export async function getNeteaseUserPlaylists() {
         return String(item?.creator?.userId) === String(uid);
     });
     return list.map(mapSheet);
+}
+
+export async function getNeteasePlaylistIdsContainingSongs(
+    songIds: string[],
+) {
+    if (!songIds.length || !isNeteaseLoggedIn()) {
+        return new Set<string>();
+    }
+    const playlists = await getNeteaseUserPlaylists();
+    const target = songIds.map(String);
+    const containing = new Set<string>();
+    for (const pl of playlists) {
+        try {
+            const data = await neteaseWeapiPost(
+                "https://music.163.com/weapi/v3/playlist/detail",
+                {
+                    id: pl.id,
+                    n: 1000,
+                    s: 8,
+                },
+            );
+            const playlist = data?.playlist || {};
+            const idSet = new Set<string>(
+                (playlist.trackIds || [])
+                    .map((t: any) => String(t.id || t))
+                    .filter(Boolean),
+            );
+            if (!idSet.size) {
+                (playlist.tracks || []).forEach((t: any) =>
+                    idSet.add(String(t.id)),
+                );
+            }
+            if (target.every(id => idSet.has(id))) {
+                containing.add(String(pl.id));
+            }
+        } catch {
+            // ignore single playlist errors
+        }
+    }
+    return containing;
 }
 
 export async function createNeteasePlaylist(name: string) {

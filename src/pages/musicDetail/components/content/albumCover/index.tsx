@@ -1,14 +1,12 @@
 import React, { useEffect } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated, {
     cancelAnimation,
     Easing,
     interpolate,
     useAnimatedStyle,
     useSharedValue,
-    withDelay,
     withRepeat,
-    withSequence,
     withTiming,
 } from "react-native-reanimated";
 import rpx from "@/utils/rpx";
@@ -26,56 +24,6 @@ interface IProps {
     onTurnPageClick?: () => void;
 }
 
-function OrbitDot(props: {
-    size: number;
-    radius: number;
-    delayMs: number;
-    color: string;
-}) {
-    const { size, radius, delayMs, color } = props;
-    const t = useSharedValue(0);
-
-    useEffect(() => {
-        t.value = withDelay(
-            delayMs,
-            withRepeat(
-                withTiming(1, {
-                    duration: 6000 + delayMs,
-                    easing: Easing.linear,
-                }),
-                -1,
-                false,
-            ),
-        );
-    }, [delayMs, t]);
-
-    const style = useAnimatedStyle(() => {
-        const angle = t.value * Math.PI * 2;
-        return {
-            transform: [
-                { translateX: Math.cos(angle) * radius },
-                { translateY: Math.sin(angle) * radius },
-            ],
-            opacity: 0.35 + 0.45 * Math.sin(t.value * Math.PI * 2),
-        };
-    });
-
-    return (
-        <Animated.View
-            style={[
-                {
-                    position: "absolute",
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                    backgroundColor: color,
-                },
-                style,
-            ]}
-        />
-    );
-}
-
 export default function AlbumCover(props: IProps) {
     const { onTurnPageClick } = props;
 
@@ -84,42 +32,28 @@ export default function AlbumCover(props: IProps) {
     const orientation = useOrientation();
     const paused = musicIsPaused(musicState);
 
-    const coverSize = orientation === "vertical" ? rpx(480) : rpx(240);
-    const discSize = coverSize * 1.22;
+    const coverSize = orientation === "vertical" ? rpx(460) : rpx(220);
+    const discSize = coverSize * 1.18;
+    const labelSize = coverSize * 0.42;
 
     const rotate = useSharedValue(0);
-    const pulse = useSharedValue(0);
-    const shine = useSharedValue(0);
-    const ring = useSharedValue(0);
-    const needle = useSharedValue(paused ? -28 : 0);
+    const needle = useSharedValue(paused ? -32 : 0);
+    const breathe = useSharedValue(0);
 
     useEffect(() => {
-        pulse.value = withRepeat(
+        breathe.value = withRepeat(
             withTiming(1, {
-                duration: 2400,
+                duration: 2800,
                 easing: Easing.inOut(Easing.sin),
             }),
             -1,
             true,
         );
-        shine.value = withRepeat(
-            withTiming(1, { duration: 4200, easing: Easing.linear }),
-            -1,
-            false,
-        );
-        ring.value = withRepeat(
-            withSequence(
-                withTiming(1, { duration: 2200, easing: Easing.out(Easing.cubic) }),
-                withTiming(0, { duration: 0 }),
-            ),
-            -1,
-            false,
-        );
-    }, [pulse, shine, ring]);
+    }, [breathe]);
 
     useEffect(() => {
-        needle.value = withTiming(paused ? -28 : 0, {
-            duration: 420,
+        needle.value = withTiming(paused ? -32 : 0, {
+            duration: 480,
             easing: Easing.out(Easing.cubic),
         });
         if (paused) {
@@ -128,7 +62,7 @@ export default function AlbumCover(props: IProps) {
         }
         rotate.value = withRepeat(
             withTiming(rotate.value + 360, {
-                duration: 16000,
+                duration: 18000,
                 easing: Easing.linear,
             }),
             -1,
@@ -140,41 +74,17 @@ export default function AlbumCover(props: IProps) {
         transform: [{ rotate: `${rotate.value % 360}deg` }],
     }));
 
-    const glowStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(pulse.value, [0, 1], [0.2, 0.55]),
+    const shadowStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(breathe.value, [0, 1], [0.28, 0.48]),
         transform: [
-            { scale: interpolate(pulse.value, [0, 1], [0.9, 1.12]) },
+            { scale: interpolate(breathe.value, [0, 1], [0.96, 1.04]) },
         ],
-    }));
-
-    const glow2Style = useAnimatedStyle(() => ({
-        opacity: interpolate(pulse.value, [0, 1], [0.12, 0.35]),
-        transform: [
-            { scale: interpolate(pulse.value, [0, 1], [1.05, 1.28]) },
-        ],
-    }));
-
-    const ringStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(ring.value, [0, 1], [0.45, 0]),
-        transform: [{ scale: interpolate(ring.value, [0, 1], [0.85, 1.45]) }],
-    }));
-
-    const shineStyle = useAnimatedStyle(() => ({
-        transform: [
-            {
-                translateX: interpolate(
-                    shine.value,
-                    [0, 1],
-                    [-discSize * 0.6, discSize * 0.6],
-                ),
-            },
-            { rotate: "25deg" },
-        ],
-        opacity: paused ? 0 : 0.35,
     }));
 
     const needleStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${needle.value}deg` }],
+        transform: [
+            { rotate: `${needle.value}deg` },
+        ],
     }));
 
     const longPress = Gesture.LongPress()
@@ -195,6 +105,20 @@ export default function AlbumCover(props: IProps) {
 
     const combineGesture = Gesture.Race(tap, longPress);
 
+    const grooves = [0.94, 0.86, 0.78, 0.7, 0.62].map(ratio => (
+        <View
+            key={ratio}
+            style={[
+                styles.groove,
+                {
+                    width: discSize * ratio,
+                    height: discSize * ratio,
+                    borderRadius: discSize,
+                },
+            ]}
+        />
+    ));
+
     return (
         <>
             <GestureDetector gesture={combineGesture}>
@@ -203,57 +127,13 @@ export default function AlbumCover(props: IProps) {
                         style={[
                             {
                                 position: "absolute",
-                                width: discSize * 1.55,
-                                height: discSize * 1.55,
+                                width: discSize * 1.2,
+                                height: discSize * 1.2,
                                 borderRadius: discSize,
-                                backgroundColor: "rgba(236,65,65,0.22)",
+                                backgroundColor: "rgba(0,0,0,0.35)",
                             },
-                            glow2Style,
+                            shadowStyle,
                         ]}
-                    />
-                    <Animated.View
-                        style={[
-                            {
-                                position: "absolute",
-                                width: discSize * 1.35,
-                                height: discSize * 1.35,
-                                borderRadius: discSize,
-                                backgroundColor: "rgba(236,65,65,0.4)",
-                            },
-                            glowStyle,
-                        ]}
-                    />
-                    <Animated.View
-                        style={[
-                            {
-                                position: "absolute",
-                                width: discSize,
-                                height: discSize,
-                                borderRadius: discSize / 2,
-                                borderWidth: rpx(3),
-                                borderColor: "rgba(255,255,255,0.35)",
-                            },
-                            ringStyle,
-                        ]}
-                    />
-
-                    <OrbitDot
-                        size={rpx(10)}
-                        radius={discSize * 0.62}
-                        delayMs={0}
-                        color="#fff"
-                    />
-                    <OrbitDot
-                        size={rpx(8)}
-                        radius={discSize * 0.72}
-                        delayMs={800}
-                        color="rgba(236,65,65,0.9)"
-                    />
-                    <OrbitDot
-                        size={rpx(6)}
-                        radius={discSize * 0.8}
-                        delayMs={1600}
-                        color="rgba(255,255,255,0.7)"
                     />
 
                     <Animated.View
@@ -264,54 +144,46 @@ export default function AlbumCover(props: IProps) {
                                 borderRadius: discSize / 2,
                                 alignItems: "center",
                                 justifyContent: "center",
-                                backgroundColor: "#121212",
-                                borderWidth: rpx(12),
-                                borderColor: "rgba(255,255,255,0.1)",
+                                backgroundColor: "#1a1a1a",
+                                borderWidth: rpx(10),
+                                borderColor: "#2c2c2c",
                                 overflow: "hidden",
+                                elevation: 10,
+                                shadowColor: "#000",
+                                shadowOpacity: 0.45,
+                                shadowRadius: 16,
+                                shadowOffset: { width: 0, height: 8 },
                             },
                             discStyle,
                         ]}>
-                        {/* vinyl grooves */}
+                        {grooves}
                         <View
-                            style={{
-                                position: "absolute",
-                                width: discSize * 0.92,
-                                height: discSize * 0.92,
-                                borderRadius: discSize,
-                                borderWidth: rpx(2),
-                                borderColor: "rgba(255,255,255,0.06)",
-                            }}
-                        />
-                        <View
-                            style={{
-                                position: "absolute",
-                                width: discSize * 0.78,
-                                height: discSize * 0.78,
-                                borderRadius: discSize,
-                                borderWidth: rpx(2),
-                                borderColor: "rgba(255,255,255,0.05)",
-                            }}
+                            style={[
+                                styles.innerRing,
+                                {
+                                    width: labelSize * 1.18,
+                                    height: labelSize * 1.18,
+                                    borderRadius: labelSize,
+                                },
+                            ]}
                         />
                         <FastImage
                             style={{
-                                width: coverSize * 0.58,
-                                height: coverSize * 0.58,
-                                borderRadius: coverSize * 0.29,
+                                width: labelSize,
+                                height: labelSize,
+                                borderRadius: labelSize / 2,
                             }}
                             source={musicItem?.artwork}
                             placeholderSource={ImgAsset.albumDefault}
                         />
-                        <Animated.View
-                            pointerEvents="none"
+                        <View
                             style={[
+                                styles.spindle,
                                 {
-                                    position: "absolute",
-                                    width: rpx(60),
-                                    height: discSize,
-                                    backgroundColor:
-                                        "rgba(255,255,255,0.18)",
+                                    width: rpx(18),
+                                    height: rpx(18),
+                                    borderRadius: rpx(9),
                                 },
-                                shineStyle,
                             ]}
                         />
                     </Animated.View>
@@ -319,35 +191,18 @@ export default function AlbumCover(props: IProps) {
                     {/* tonearm */}
                     <View
                         pointerEvents="none"
-                        style={{
-                            position: "absolute",
-                            top: "8%",
-                            right: "12%",
-                            width: rpx(40),
-                            height: discSize * 0.55,
-                            alignItems: "center",
-                        }}>
-                        <Animated.View
-                            style={[
-                                {
-                                    width: rpx(16),
-                                    height: "100%",
-                                    borderRadius: rpx(10),
-                                    backgroundColor: "rgba(230,230,230,0.9)",
-                                    alignItems: "center",
-                                },
-                                needleStyle,
-                            ]}>
-                            <View
-                                style={{
-                                    position: "absolute",
-                                    bottom: -rpx(4),
-                                    width: rpx(28),
-                                    height: rpx(28),
-                                    borderRadius: rpx(6),
-                                    backgroundColor: "#EC4141",
-                                }}
-                            />
+                        style={[
+                            styles.armWrap,
+                            {
+                                top: orientation === "vertical" ? "6%" : "2%",
+                                right: orientation === "vertical" ? "10%" : "6%",
+                                height: discSize * 0.58,
+                            },
+                        ]}>
+                        <View style={styles.armPivot} />
+                        <Animated.View style={[styles.arm, needleStyle]}>
+                            <View style={styles.armBar} />
+                            <View style={styles.armHead} />
                         </Animated.View>
                     </View>
                 </View>
@@ -356,3 +211,60 @@ export default function AlbumCover(props: IProps) {
         </>
     );
 }
+
+const styles = StyleSheet.create({
+    groove: {
+        position: "absolute",
+        borderWidth: StyleSheet.hairlineWidth * 2,
+        borderColor: "rgba(255,255,255,0.06)",
+    },
+    innerRing: {
+        position: "absolute",
+        borderWidth: rpx(4),
+        borderColor: "rgba(255,255,255,0.12)",
+        backgroundColor: "rgba(0,0,0,0.25)",
+    },
+    spindle: {
+        position: "absolute",
+        backgroundColor: "#c0c0c0",
+        borderWidth: rpx(2),
+        borderColor: "#8a8a8a",
+    },
+    armWrap: {
+        position: "absolute",
+        width: rpx(48),
+        alignItems: "center",
+    },
+    armPivot: {
+        width: rpx(28),
+        height: rpx(28),
+        borderRadius: rpx(14),
+        backgroundColor: "#d8d8d8",
+        borderWidth: rpx(3),
+        borderColor: "#9a9a9a",
+        zIndex: 2,
+    },
+    arm: {
+        position: "absolute",
+        top: rpx(10),
+        width: rpx(48),
+        height: "100%",
+        alignItems: "center",
+        transformOrigin: "top center",
+    },
+    armBar: {
+        width: rpx(10),
+        flex: 1,
+        borderRadius: rpx(6),
+        backgroundColor: "#e8e8e8",
+    },
+    armHead: {
+        width: rpx(34),
+        height: rpx(42),
+        marginTop: -rpx(4),
+        borderRadius: rpx(8),
+        backgroundColor: "#EC4141",
+        borderWidth: rpx(2),
+        borderColor: "rgba(255,255,255,0.35)",
+    },
+});

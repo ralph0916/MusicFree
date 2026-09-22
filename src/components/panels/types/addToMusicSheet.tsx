@@ -19,14 +19,17 @@ import {
 } from "@/constants/commonConst";
 import {
     addSongsToNavidromePlaylist,
+    getNavidromePlaylistIdsContainingSongs,
     getNavidromePlaylists,
 } from "@/core/pluginManager/navidromePlugin";
 import {
     addSongsToNeteasePlaylist,
+    getNeteasePlaylistIdsContainingSongs,
     getNeteaseUserPlaylists,
 } from "@/core/pluginManager/neteasePlugin";
 import {
     addSongsToQqPlaylist,
+    getQqPlaylistIdsContainingSongs,
     getQqUserPlaylists,
 } from "@/core/pluginManager/qqPlugin";
 import { isNeteaseLoggedIn } from "@/core/pluginManager/neteaseAuth";
@@ -51,6 +54,9 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
     const safeAreaInsets = useSafeAreaInsets();
     const [sheets, setSheets] = useState<IMusic.IMusicSheetItemBase[]>([]);
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [initialSelected, setInitialSelected] = useState<Set<string>>(
+        new Set(),
+    );
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -62,27 +68,37 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
             setError(null);
             try {
                 let list: IMusic.IMusicSheetItemBase[] = [];
+                const songIds = items.map(i => String(i.id));
+                let containing = new Set<string>();
+
                 if (platform === navidromePluginPlatform) {
                     list = await getNavidromePlaylists();
-                    // 「全部」不是歌单，仅展示真实歌单
                     list = list.filter(
                         s => s.title !== "全部" && s.id !== "全部",
                     );
+                    containing =
+                        await getNavidromePlaylistIdsContainingSongs(songIds);
                 } else if (platform === neteasePluginPlatform) {
                     if (!isNeteaseLoggedIn()) {
                         throw new Error("请先登录网易云账号");
                     }
                     list = await getNeteaseUserPlaylists();
+                    containing =
+                        await getNeteasePlaylistIdsContainingSongs(songIds);
                 } else if (platform === qqPluginPlatform) {
                     if (!isQqLoggedIn()) {
                         throw new Error("请先登录 QQ 音乐账号");
                     }
                     list = await getQqUserPlaylists();
+                    containing =
+                        await getQqPlaylistIdsContainingSongs(songIds);
                 } else {
                     throw new Error("当前音源不支持加入远端歌单");
                 }
                 if (!cancelled) {
                     setSheets(list);
+                    setSelected(new Set(containing));
+                    setInitialSelected(new Set(containing));
                 }
             } catch (e: any) {
                 if (!cancelled) {
@@ -98,7 +114,7 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
         return () => {
             cancelled = true;
         };
-    }, [platform]);
+    }, [platform, items]);
 
     const toggle = (id: string) => {
         setSelected(prev => {
@@ -116,8 +132,9 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
         if (submitting) {
             return;
         }
-        const ids = [...selected];
-        if (ids.length === 0) {
+        // 只把新勾选的歌单加入（已在歌单中的保持勾选即可，避免重复请求）
+        const toAdd = [...selected].filter(id => !initialSelected.has(id));
+        if (toAdd.length === 0) {
             hidePanel();
             return;
         }
@@ -125,19 +142,19 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
         try {
             const songIds = items.map(i => String(i.id));
             if (platform === navidromePluginPlatform) {
-                for (const playlistId of ids) {
+                for (const playlistId of toAdd) {
                     await addSongsToNavidromePlaylist(playlistId, songIds);
                 }
             } else if (platform === neteasePluginPlatform) {
-                for (const playlistId of ids) {
+                for (const playlistId of toAdd) {
                     await addSongsToNeteasePlaylist(playlistId, songIds);
                 }
             } else if (platform === qqPluginPlatform) {
-                for (const playlistId of ids) {
+                for (const playlistId of toAdd) {
                     await addSongsToQqPlaylist(playlistId, songIds);
                 }
             }
-            Toast.success(`已加入 ${ids.length} 个歌单`);
+            Toast.success(`已加入 ${toAdd.length} 个歌单`);
             hidePanel();
         } catch (e: any) {
             Toast.warn(e?.message || "加入歌单失败");
@@ -172,7 +189,7 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
                             fontSize="description"
                             fontColor="textSecondary"
                             style={style.hint}>
-                            可多选当前渠道歌单；也可以不选直接完成
+                            已在歌单中的会自动勾选；可多选或全部取消
                         </ThemeText>
                         {error ? (
                             <ThemeText
