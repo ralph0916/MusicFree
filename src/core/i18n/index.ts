@@ -21,27 +21,31 @@ const allLanguages: ILanguage[] = [{
     languageData: enUS,
 }];
 
-const defaultLocale = PersistStatus.get("app.language") || "zh-CN";
-const currentLanguageAtom = atom<ILanguage>(allLanguages.find(item => item.locale === defaultLocale) ?? allLanguages[0]);
+const defaultLocale = "zh-CN";
+const currentLanguageAtom = atom<ILanguage>(
+    allLanguages.find(item => item.locale === defaultLocale) ?? allLanguages[0],
+);
 
 
 class I18N<K extends keyof ILanguageData> {
     setup() {
-
+        // 锁定简体中文
+        PersistStatus.set("app.language", "zh-CN");
+        getDefaultStore().set(currentLanguageAtom, allLanguages[0]);
     }
 
     getSupportedLanguages() {
-        return allLanguages;
+        return [allLanguages[0]];
     }
 
     getLanguage() {
-        return getDefaultStore().get(currentLanguageAtom);
+        return allLanguages[0];
     }
 
-    setLanguage(locale: string) {
-        const language = allLanguages.find(item => item.locale === locale) ?? allLanguages[0];
-        getDefaultStore().set(currentLanguageAtom, language);
-        PersistStatus.set("app.language", language.locale);
+    setLanguage(_locale: string) {
+        // 锁定中文，忽略切换
+        getDefaultStore().set(currentLanguageAtom, allLanguages[0]);
+        PersistStatus.set("app.language", "zh-CN");
     }
 
     t(key: K, args?: Record<string, any>): ILanguageData[K] {

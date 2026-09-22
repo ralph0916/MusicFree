@@ -1,46 +1,16 @@
-import { showDialog } from "@/components/dialogs/useDialog";
-import PersistStatus from "@/utils/persistStatus";
-import checkUpdate from "@/utils/checkUpdate";
-import Toast from "@/utils/toast";
-import { compare } from "compare-versions";
 import { useEffect } from "react";
-import i18n from "@/core/i18n";
 
+/** 已禁用检查更新 */
 export const checkUpdateAndShowResult = (
-    showToast = false,
-    checkSkip = false,
+    _showToast = false,
+    _checkSkip = false,
 ) => {
-    checkUpdate().then(updateInfo => {
-        if (updateInfo?.needUpdate) {
-            const { data } = updateInfo;
-            const skipVersion = PersistStatus.get("app.skipVersion");
-            console.log(skipVersion, data);
-            if (
-                checkSkip &&
-                skipVersion &&
-                compare(skipVersion, data.version, ">=")
-            ) {
-                return;
-            }
-            showDialog("DownloadDialog", {
-                version: data.version,
-                content: data.changeLog,
-                fromUrl: data.download[0],
-                backUrl: data.download[1],
-            });
-        } else {
-            if (showToast) {
-                Toast.success(i18n.t("checkUpdate.error.latestVersion"));
-            }
-        }
-    });
+    // no-op
 };
 
-export default function (callOnMount = true) {
+export default function (_callOnMount = true) {
     useEffect(() => {
-        if (callOnMount) {
-            checkUpdateAndShowResult(false, true);
-        }
+        // 检查更新已关闭
     }, []);
 
     return checkUpdateAndShowResult;

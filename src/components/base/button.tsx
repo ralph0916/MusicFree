@@ -40,7 +40,7 @@ export function Button(props: {
 
 const styles = StyleSheet.create({
     bottomBtn: {
-        borderRadius: rpx(8),
+        borderRadius: rpx(36),
         flexShrink: 0,
         justifyContent: "center",
         alignItems: "center",

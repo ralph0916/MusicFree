@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
-import NavBar from "./components/navBar";
 import { useAtom, useSetAtom } from "jotai";
+import NavBar from "./components/navBar";
 import {
     PageStatus,
     initSearchResults,
@@ -11,18 +11,23 @@ import {
 } from "./store/atoms";
 import HistoryPanel from "./components/historyPanel";
 import ResultPanel from "./components/resultPanel";
-import MusicBar from "@/components/musicBar";
 import Loading from "@/components/base/loading";
 import { SafeAreaView } from "react-native-safe-area-context";
 import StatusBar from "@/components/base/statusBar";
 import NoPlugin from "../../components/base/noPlugin";
 import { useI18N } from "@/core/i18n";
+import HomePlayerBar from "@/pages/home/components/homePlayerBar";
+import BottomTabBar, { HomeTabKey } from "@/pages/home/components/bottomTabBar";
+import { homeTabAtom } from "@/pages/home/store/homeTabAtom";
+import { ROUTE_PATH, useNavigate } from "@/core/router";
 
 export default function () {
     const [pageStatus, setPageStatus] = useAtom(pageStatusAtom);
     const setQuery = useSetAtom(queryAtom);
     const setSearchResultsState = useSetAtom(searchResultsAtom);
     const { t } = useI18N();
+    const [, setHomeTab] = useAtom(homeTabAtom);
+    const navigate = useNavigate();
 
     useEffect(() => {
         setSearchResultsState(initSearchResults);
@@ -31,6 +36,11 @@ export default function () {
             setQuery("");
         };
     }, []);
+
+    const onTabChange = (key: HomeTabKey) => {
+        setHomeTab(key);
+        navigate(ROUTE_PATH.HOME);
+    };
 
     return (
         <SafeAreaView edges={["bottom", "top"]} style={style.wrapper}>
@@ -46,7 +56,8 @@ export default function () {
                     )}
                 </View>
             </SafeAreaView>
-            <MusicBar />
+            <HomePlayerBar />
+            <BottomTabBar active="home" onChange={onTabChange} />
         </SafeAreaView>
     );
 }

@@ -9,11 +9,12 @@ import { ImgAsset } from "@/constants/assetsConst";
 interface IThemeCardProps {
     selected?: boolean;
     preview?: string;
+    accent?: string;
     onPress?: () => void;
     title?: string;
 }
 export default function ThemeCard(props: IThemeCardProps) {
-    const { selected, preview, onPress, title } = props;
+    const { selected, preview, accent, onPress, title } = props;
 
     const isPreviewColor = preview?.startsWith("#") ? true : false;
 
@@ -42,7 +43,28 @@ export default function ThemeCard(props: IThemeCardProps) {
                             }
                             : null,
                     ]}>
-                    {isPreviewColor ? null : (
+                    {isPreviewColor ? (
+                        <>
+                            <View
+                                style={[
+                                    styles.accentBar,
+                                    {
+                                        backgroundColor:
+                                            accent || colors.primary,
+                                    },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    styles.accentDot,
+                                    {
+                                        backgroundColor:
+                                            accent || colors.primary,
+                                    },
+                                ]}
+                            />
+                        </>
+                    ) : (
                         <Image
                             style={styles.image}
                             uri={preview}
@@ -75,6 +97,22 @@ const styles = StyleSheet.create({
         width: rpx(136),
         height: rpx(136),
         borderRadius: rpx(12),
+        overflow: "hidden",
+    },
+    accentBar: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: rpx(18),
+    },
+    accentDot: {
+        position: "absolute",
+        right: rpx(14),
+        bottom: rpx(14),
+        width: rpx(28),
+        height: rpx(28),
+        borderRadius: rpx(14),
     },
     title: {
         textAlign: "center",

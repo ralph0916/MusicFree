@@ -3,12 +3,10 @@ import { IIconName } from "@/components/base/icon.tsx";
 import ListItem from "@/components/base/listItem";
 import PageBackground from "@/components/base/pageBackground";
 import ThemeText from "@/components/base/themeText";
-import { showDialog } from "@/components/dialogs/useDialog";
 import { showPanel } from "@/components/panels/usePanel";
 import { useI18N } from "@/core/i18n";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import TrackPlayer from "@/core/trackPlayer";
-import { checkUpdateAndShowResult } from "@/hooks/useCheckUpdate.ts";
 import NativeUtils from "@/native/utils";
 import rpx from "@/utils/rpx";
 import { useScheduleCloseCountDown } from "@/utils/scheduleClose";
@@ -16,7 +14,8 @@ import timeformat from "@/utils/timeformat";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import React, { memo } from "react";
 import { BackHandler, Platform, StyleSheet, View } from "react-native";
-import { default as DeviceInfo, default as deviceInfoModule } from "react-native-device-info";
+import { default as DeviceInfo } from "react-native-device-info";
+import useColors from "@/hooks/useColors";
 
 const ITEM_HEIGHT = rpx(108);
 
@@ -28,13 +27,14 @@ interface ISettingOptions {
 
 function HomeDrawer(props: any) {
     const navigate = useNavigate();
+    const colors = useColors();
     function navigateToSetting(settingType: string) {
         navigate(ROUTE_PATH.SETTING, {
             type: settingType,
         });
     }
 
-    const { t, getSupportedLanguages, getLanguage, setLanguage } = useI18N();
+    const { t } = useI18N();
 
     const basicSetting: ISettingOptions[] = [
         {
@@ -43,7 +43,8 @@ function HomeDrawer(props: any) {
             onPress: () => {
                 navigateToSetting("basic");
             },
-        }, {
+        },
+        {
             icon: "javascript",
             title: t("sidebar.pluginManagement"),
             onPress: () => {
@@ -79,18 +80,25 @@ function HomeDrawer(props: any) {
         });
     }
 
-
     return (
         <>
             <PageBackground />
             <DrawerContentScrollView {...[props]} style={style.scrollWrapper}>
                 <View style={style.header}>
-                    <ThemeText fontSize="appbar" fontWeight="bold">
-                        {DeviceInfo.getApplicationName()}
-                    </ThemeText>
-                    {/* <IconButton icon={'qrcode-scan'} size={rpx(36)} /> */}
+                    <View style={style.brandRow}>
+                        <View style={style.brandDot} />
+                        <ThemeText fontSize="appbar" fontWeight="bold">
+                            {DeviceInfo.getApplicationName()}
+                        </ThemeText>
+                    </View>
                 </View>
-                <View style={style.card}>
+                <View
+                    style={[
+                        style.card,
+                        {
+                            backgroundColor: colors.card,
+                        },
+                    ]}>
                     <ListItem withHorizontalPadding heightType="smallest">
                         <ListItem.ListItemText
                             fontSize="subTitle"
@@ -111,7 +119,13 @@ function HomeDrawer(props: any) {
                         </ListItem>
                     ))}
                 </View>
-                <View style={style.card}>
+                <View
+                    style={[
+                        style.card,
+                        {
+                            backgroundColor: colors.card,
+                        },
+                    ]}>
                     <ListItem withHorizontalPadding heightType="smallest">
                         <ListItem.ListItemText
                             fontSize="subTitle"
@@ -132,73 +146,12 @@ function HomeDrawer(props: any) {
                             <ListItem.Content title={item.title} />
                         </ListItem>
                     ))}
-                    <ListItem withHorizontalPadding key='language' onPress={() => {
-                        showDialog("RadioDialog", {
-                            "content": getSupportedLanguages().map(item => ({
-                                title: item.name,
-                                value: item.locale,
-                                label: item.name,
-                            })),
-                            title: t("sidebar.languageSettings"),
-                            onOk(value) {
-                                setLanguage(value as string);
-                            },
-                            defaultSelected: getLanguage().locale,
-                        });
-                    }}>
-                        <ListItem.ListItemIcon icon='language' width={rpx(48)} />
-                        <ListItem.Content title={t("sidebar.languageSettings")} />
-                        <ListItem.ListItemText fontSize='subTitle' position='right'>{getLanguage().name}</ListItem.ListItemText>
-                    </ListItem>
-                </View>
-
-                <View style={style.card}>
-                    <ListItem withHorizontalPadding heightType="smallest">
-                        <ListItem.ListItemText
-                            fontSize="subTitle"
-                            fontWeight="bold">
-                            {t("common.software")}
-                        </ListItem.ListItemText>
-                    </ListItem>
-
-                    <ListItem
-                        withHorizontalPadding
-                        key={"update"}
-                        onPress={() => {
-                            checkUpdateAndShowResult(true);
-                        }}>
-                        <ListItem.ListItemIcon
-                            icon={"arrow-path"}
-                            width={rpx(48)}
-                        />
-                        <ListItem.Content title={t("sidebar.checkUpdate")} />
-                        <ListItem.ListItemText
-                            position="right"
-                            fontSize="subTitle">
-                            {`${t("sidebar.currentVersion")}${deviceInfoModule.getVersion()}`}
-                        </ListItem.ListItemText>
-                    </ListItem>
-                    <ListItem
-                        withHorizontalPadding
-                        key={"about"}
-                        onPress={() => {
-                            navigateToSetting("about");
-                        }}>
-                        <ListItem.ListItemIcon
-                            icon={"information-circle"}
-                            width={rpx(48)}
-                        />
-                        <ListItem.Content
-                            title={`${t("common.about")} ${deviceInfoModule.getApplicationName()}`}
-                        />
-                    </ListItem>
                 </View>
 
                 <Divider />
                 <ListItem
                     withHorizontalPadding
                     onPress={() => {
-                        // 仅安卓生效
                         BackHandler.exitApp();
                     }}>
                     <ListItem.ListItemIcon
@@ -234,23 +187,29 @@ const style = StyleSheet.create({
     scrollWrapper: {
         paddingTop: rpx(12),
     },
-
     header: {
-        height: rpx(120),
         width: "100%",
+        paddingHorizontal: rpx(24),
+        paddingVertical: rpx(28),
+        marginBottom: rpx(8),
+    },
+    brandRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
-        marginLeft: rpx(24),
+    },
+    brandDot: {
+        width: rpx(16),
+        height: rpx(16),
+        borderRadius: rpx(8),
+        backgroundColor: "#EC4141",
+        marginRight: rpx(16),
     },
     card: {
         marginBottom: rpx(24),
+        marginHorizontal: rpx(16),
+        borderRadius: rpx(20),
+        overflow: "hidden",
     },
-    cardContent: {
-        paddingHorizontal: 0,
-    },
-
-    /** 倒计时 */
     countDownText: {
         height: ITEM_HEIGHT,
         textAlignVertical: "center",

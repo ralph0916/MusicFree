@@ -12,6 +12,15 @@ export const musicHistorySheetId = "history-music-sheet";
 export const localPluginPlatform = "本地";
 export const localPluginHash = "local-plugin-hash";
 
+export const navidromePluginPlatform = "Navidrome";
+export const navidromePluginHash = "navidrome-plugin-hash";
+
+export const neteasePluginPlatform = "网易云";
+export const neteasePluginHash = "netease-plugin-hash";
+
+export const qqPluginPlatform = "QQ音乐";
+export const qqPluginHash = "qq-plugin-hash";
+
 export const internalFakeSoundKey = "fake-key";
 
 const emptyFunction = () => {};

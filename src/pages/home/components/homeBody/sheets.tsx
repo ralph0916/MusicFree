@@ -13,9 +13,10 @@ import useColors from "@/hooks/useColors";
 import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
 import { FlashList } from "@shopify/flash-list";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { TouchableWithoutFeedback } from "react-native-gesture-handler";
+import Color from "color";
 
 export default function Sheets() {
     const [index, setIndex] = useState(0);
@@ -26,18 +27,14 @@ export default function Sheets() {
     const staredSheets = useStarredSheets();
     const { t } = useI18N();
 
-    const selectedTabTextStyle = useMemo(() => {
-        return [
-            styles.selectTabText,
-            {
-                borderBottomColor: colors.primary,
-            },
-        ];
-    }, [colors]);
-
-
     return (
-        <>
+        <View
+            style={[
+                styles.section,
+                {
+                    backgroundColor: colors.card,
+                },
+            ]}>
             <View style={styles.subTitleContainer}>
                 <TouchableWithoutFeedback
                     style={styles.tabContainer}
@@ -48,50 +45,76 @@ export default function Sheets() {
                     onPress={() => {
                         setIndex(0);
                     }}>
-                    <ThemeText
-                        accessible={false}
-                        fontSize="title"
+                    <View style={styles.tabInner}>
+                        <ThemeText
+                            accessible={false}
+                            fontSize="title"
+                            fontWeight={index === 0 ? "bold" : "regular"}
+                            color={
+                                index === 0 ? colors.primary : colors.text
+                            }
+                            style={styles.tabText}>
+                            {t("home.myPlaylists")}
+                        </ThemeText>
+                        <ThemeText
+                            accessible={false}
+                            fontColor="textSecondary"
+                            fontSize="description"
+                            style={styles.countText}>
+                            {allSheets.length}
+                        </ThemeText>
+                    </View>
+                    <View
                         style={[
-                            styles.tabText,
-                            index === 0 ? selectedTabTextStyle : null,
-                        ]}>
-                        {t("home.myPlaylists")}
-                    </ThemeText>
-                    <ThemeText
-                        accessible={false}
-                        fontColor="textSecondary"
-                        fontSize="subTitle"
-                        style={styles.tabText}>
-                        {" "}
-                        ({allSheets.length})
-                    </ThemeText>
+                            styles.underline,
+                            {
+                                backgroundColor:
+                                    index === 0
+                                        ? colors.primary
+                                        : "transparent",
+                            },
+                        ]}
+                    />
                 </TouchableWithoutFeedback>
                 <TouchableWithoutFeedback
                     style={styles.tabContainer}
                     accessible
                     accessibilityLabel={t("home.starredPlaylistsCount.a11y", {
-                        count: allSheets.length,
+                        count: staredSheets.length,
                     })}
                     onPress={() => {
                         setIndex(1);
                     }}>
-                    <ThemeText
-                        fontSize="title"
-                        accessible={false}
+                    <View style={styles.tabInner}>
+                        <ThemeText
+                            fontSize="title"
+                            accessible={false}
+                            fontWeight={index === 1 ? "bold" : "regular"}
+                            color={
+                                index === 1 ? colors.primary : colors.text
+                            }
+                            style={styles.tabText}>
+                            {t("home.starredPlaylists")}
+                        </ThemeText>
+                        <ThemeText
+                            fontColor="textSecondary"
+                            fontSize="description"
+                            accessible={false}
+                            style={styles.countText}>
+                            {staredSheets.length}
+                        </ThemeText>
+                    </View>
+                    <View
                         style={[
-                            styles.tabText,
-                            index === 1 ? selectedTabTextStyle : null,
-                        ]}>
-                        {t("home.starredPlaylists")}
-                    </ThemeText>
-                    <ThemeText
-                        fontColor="textSecondary"
-                        fontSize="subTitle"
-                        accessible={false}
-                        style={styles.tabText}>
-                        {" "}
-                        ({staredSheets.length})
-                    </ThemeText>
+                            styles.underline,
+                            {
+                                backgroundColor:
+                                    index === 1
+                                        ? colors.primary
+                                        : "transparent",
+                            },
+                        ]}
+                    />
                 </TouchableWithoutFeedback>
                 <View style={styles.more}>
                     <IconButton
@@ -120,9 +143,9 @@ export default function Sheets() {
                 estimatedItemSize={ListItem.Size.big}
                 renderItem={({ item: sheet }) => {
                     const isLocalSheet = !(
-                        sheet.platform && sheet.platform !== localPluginPlatform
+                        sheet.platform &&
+                        sheet.platform !== localPluginPlatform
                     );
-
 
                     return (
                         <ListItem
@@ -153,7 +176,9 @@ export default function Sheets() {
                                 title={sheet.title}
                                 description={
                                     isLocalSheet
-                                        ? t("home.songCount", { count: sheet.worksNum })
+                                        ? t("home.songCount", {
+                                            count: sheet.worksNum,
+                                        })
                                         : `${sheet.artist ?? ""}`
                                 }
                             />
@@ -161,23 +186,39 @@ export default function Sheets() {
                                 <ListItem.ListItemIcon
                                     position="right"
                                     icon="trash-outline"
+                                    color={Color(colors.text)
+                                        .alpha(0.35)
+                                        .toString()}
                                     onPress={() => {
                                         showDialog("SimpleDialog", {
-                                            title: t("dialog.deleteSheetTitle"),
-                                            content: t("dialog.deleteSheetContent", {
-                                                name: sheet.title,
-                                            }),
+                                            title: t(
+                                                "dialog.deleteSheetTitle",
+                                            ),
+                                            content: t(
+                                                "dialog.deleteSheetContent",
+                                                {
+                                                    name: sheet.title,
+                                                },
+                                            ),
                                             onOk: async () => {
                                                 if (isLocalSheet) {
                                                     await MusicSheet.removeSheet(
                                                         sheet.id,
                                                     );
-                                                    Toast.success(t("toast.deleteSuccess"));
+                                                    Toast.success(
+                                                        t(
+                                                            "toast.deleteSuccess",
+                                                        ),
+                                                    );
                                                 } else {
                                                     await MusicSheet.unstarMusicSheet(
                                                         sheet,
                                                     );
-                                                    Toast.success(t("toast.hasUnstarred"));
+                                                    Toast.success(
+                                                        t(
+                                                            "toast.hasUnstarred",
+                                                        ),
+                                                    );
                                                 }
                                             },
                                         });
@@ -189,40 +230,54 @@ export default function Sheets() {
                 }}
                 nestedScrollEnabled
             />
-        </>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    section: {
+        marginHorizontal: rpx(24),
+        borderTopLeftRadius: rpx(24),
+        borderTopRightRadius: rpx(24),
+        paddingTop: rpx(12),
+        minHeight: rpx(600),
+        overflow: "hidden",
+    },
     subTitleContainer: {
         paddingHorizontal: rpx(24),
         flexDirection: "row",
         alignItems: "flex-start",
         marginBottom: rpx(12),
     },
-    subTitleLeft: {
-        flexDirection: "row",
-    },
     tabContainer: {
+        marginRight: rpx(28),
+        alignItems: "center",
+    },
+    tabInner: {
         flexDirection: "row",
-        marginRight: rpx(32),
+        alignItems: "center",
+        paddingBottom: rpx(10),
     },
-
     tabText: {
-        lineHeight: rpx(64),
+        lineHeight: rpx(48),
     },
-    selectTabText: {
-        borderBottomWidth: rpx(6),
-        fontWeight: "bold",
+    countText: {
+        marginLeft: rpx(8),
+        lineHeight: rpx(48),
+    },
+    underline: {
+        width: rpx(40),
+        height: rpx(6),
+        borderRadius: rpx(3),
     },
     more: {
-        height: rpx(64),
-        marginTop: rpx(3),
+        height: rpx(56),
         flexGrow: 1,
         flexDirection: "row",
         justifyContent: "flex-end",
+        alignItems: "center",
     },
     newSheetButton: {
-        marginRight: rpx(24),
+        marginRight: rpx(16),
     },
 });

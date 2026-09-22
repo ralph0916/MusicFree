@@ -41,8 +41,8 @@ const defaultPadding = rpx(24);
 const defaultActionWidth = rpx(80);
 
 const Size = {
-    big: rpx(120),
-    normal: rpx(108),
+    big: rpx(132),
+    normal: rpx(112),
     small: rpx(96),
     smallest: rpx(72),
     none: undefined,
@@ -318,9 +318,9 @@ const styles = StyleSheet.create({
     },
 
     leftImage: {
-        width: rpx(80),
-        height: rpx(80),
-        borderRadius: rpx(16),
+        width: rpx(96),
+        height: rpx(96),
+        borderRadius: rpx(12),
     },
     imageMask: {
         position: "absolute",

@@ -57,7 +57,7 @@ export default function (props: IProps) {
                     name="play-circle"
                     style={style.playAllIcon}
                     size={iconSizeConst.normal}
-                    color={colors.text}
+                    color={colors.primary}
                 />
                 <ThemeText fontWeight="bold">{t("playAllBar.title")}</ThemeText>
             </Pressable>
@@ -110,7 +110,7 @@ export default function (props: IProps) {
 const style = StyleSheet.create({
     /** playall */
     topWrapper: {
-        height: rpx(84),
+        height: rpx(88),
         paddingHorizontal: rpx(24),
         flexDirection: "row",
         alignItems: "center",

@@ -67,7 +67,7 @@ function _PluginItem(props: IPluginItemProps) {
         {
             title: t("pluginSetting.pluginItem.options.uninstallPlugin"),
             icon: "trash-outline",
-            show: true,
+            show: !plugin.path?.startsWith("internal-plugin://"),
             onPress() {
                 showDialog("SimpleDialog", {
                     title: t("pluginSetting.pluginItem.options.uninstallPlugin"),

@@ -19,6 +19,9 @@ import ImageViewer from "./imageViewer";
 import MusicComment from "./musicComment";
 import MusicItemLyricOptions from "./musicItemLyricOptions";
 import EditMusicSheetInfo from "./editMusicSheetInfo";
+import NeteaseLogin from "./neteaseLogin";
+import QqLogin from "./qqLogin";
+import NavidromeConfig from "./navidromeConfig";
 
 export default {
     /** 加入歌单 */
@@ -61,4 +64,10 @@ export default {
     MusicComment,
     MusicItemLyricOptions,
     EditMusicSheetInfo,
+    /** 网易云登录 */
+    NeteaseLogin,
+    /** QQ 音乐登录 */
+    QqLogin,
+    /** NAS / Navidrome 配置 */
+    NavidromeConfig,
 };

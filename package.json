@@ -124,8 +124,7 @@
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
-      "npm run lint",
-      "git add ."
+      "eslint --fix --ext .ts,.tsx"
     ]
   },
   "repository": {

@@ -5,42 +5,39 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import ActionButton from "../ActionButton";
+import useColors from "@/hooks/useColors";
 
 export default function Operations() {
     const navigate = useNavigate();
     const { t } = useI18N();
-
+    const colors = useColors();
 
     const actionButtons = [
         {
-            iconName: "fire",
+            iconName: "fire" as const,
+            iconColor: colors.primary,
             title: t("home.recommendSheet"),
             action() {
                 navigate(ROUTE_PATH.RECOMMEND_SHEETS);
             },
         },
         {
-            iconName: "trophy",
+            iconName: "trophy" as const,
+            iconColor: "#F5A623",
             title: t("home.topList"),
             action() {
                 navigate(ROUTE_PATH.TOP_LIST);
             },
         },
         {
-            iconName: "clock-outline",
+            iconName: "clock-outline" as const,
+            iconColor: "#507DAF",
             title: t("home.playHistory"),
             action() {
                 navigate(ROUTE_PATH.HISTORY);
             },
         },
-        {
-            iconName: "folder-music-outline",
-            title: t("home.localMusic"),
-            action() {
-                navigate(ROUTE_PATH.LOCAL);
-            },
-        },
-    ] as const;
+    ];
 
     return (
         <ScrollView style={styles.container}>
@@ -64,16 +61,16 @@ const styles = StyleSheet.create({
         flexGrow: 0,
         flexShrink: 0,
         paddingHorizontal: rpx(24),
-        marginVertical: rpx(32),
+        marginVertical: rpx(24),
         flexDirection: "row",
         flexWrap: "wrap",
     },
     actionButtonStyle: {
         width: rpx(157.5),
-        height: rpx(160),
-        borderRadius: rpx(18),
+        height: rpx(168),
+        borderRadius: rpx(20),
     },
     actionMarginLeft: {
-        marginTop: rpx(24),
+        marginTop: rpx(20),
     },
 });

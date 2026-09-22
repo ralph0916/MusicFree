@@ -22,6 +22,12 @@ import { showToast } from "@/components/base/toast";
 import { devLog, errorLog, trace } from "../../utils/log";
 import pluginMeta from "./meta";
 import { localFilePlugin, Plugin, PluginState } from "./plugin";
+import {
+    isInternalPluginPath,
+    navidromePlugin,
+} from "./navidromePlugin";
+import { neteasePlugin } from "./neteasePlugin";
+import { qqPlugin } from "./qqPlugin";
 import i18n from "../i18n";
 import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
 import { safeParse } from "@/utils/jsonUtil";
@@ -144,6 +150,14 @@ class PluginManager implements IPluginManager, IInjectable {
                     if (plugin.state === PluginState.Mounted || isLazyLoad) {
                         allPlugins.push(plugin);
                     }
+                }
+            }
+
+            // 内置 Navidrome / 网易云 / QQ 音乐
+            const builtins = [navidromePlugin, neteasePlugin, qqPlugin];
+            for (const builtin of builtins) {
+                if (!allPlugins.some(p => p.name === builtin.name)) {
+                    allPlugins.unshift(builtin);
                 }
             }
 
@@ -383,8 +397,17 @@ class PluginManager implements IPluginManager, IInjectable {
         const targetIndex = plugins.findIndex(_ => _.hash === hash);
         if (targetIndex !== -1) {
             try {
-                const pluginName = plugins[targetIndex].name;
-                await unlink(plugins[targetIndex].path);
+                const target = plugins[targetIndex];
+                // 内置插件不允许卸载
+                if (isInternalPluginPath(target.path)) {
+                    showToast({
+                        type: "warn",
+                        message: "内置插件不可卸载，可在设置中关闭",
+                    });
+                    return;
+                }
+                const pluginName = target.name;
+                await unlink(target.path);
                 plugins = plugins.filter(_ => _.hash !== hash);
                 this.setPlugins(plugins);
                 // 防止其他重名
@@ -400,16 +423,21 @@ class PluginManager implements IPluginManager, IInjectable {
      * 同时清理媒体额外数据并删除插件文件
      */
     async uninstallAllPlugins() {
+        const keptInternal: Plugin[] = [];
         await Promise.all(
             this.getPlugins().map(async plugin => {
                 try {
+                    if (isInternalPluginPath(plugin.path)) {
+                        keptInternal.push(plugin);
+                        return;
+                    }
                     const pluginName = plugin.name;
                     await unlink(plugin.path);
                     removeAllMediaExtra(pluginName);
                 } catch (e) {}
             }),
         );
-        this.setPlugins([]);
+        this.setPlugins(keptInternal);
 
         /** 清除空余文件，异步做就可以了 */
         readDir(pathConst.pluginPath)
