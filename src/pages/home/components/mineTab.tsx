@@ -151,7 +151,7 @@ export default function MineTab() {
             showPanel("SimpleSelect", {
                 header: "QQ 音乐账号",
                 candidates: [
-                    { title: "重新配置 Cookie", value: "relogin" },
+                    { title: "重新登录", value: "relogin" },
                     { title: "退出登录", value: "logout" },
                 ],
                 onPress(item) {
@@ -273,7 +273,7 @@ export default function MineTab() {
                 subtitle={
                     qqLoggedIn
                         ? `已登录 · ${qqProfile?.nickname || qqProfile?.uin}`
-                        : "未登录 · 粘贴网页 Cookie"
+                        : "未登录 · QQ号密码登录"
                 }
                 icon="playlist"
                 accent="#31C27C"

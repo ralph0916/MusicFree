@@ -3,6 +3,7 @@ import {
     ActivityIndicator,
     FlatList,
     Pressable,
+    RefreshControl,
     StyleSheet,
     View,
 } from "react-native";
@@ -288,10 +289,10 @@ export default function SongFeed(props: IProps) {
     );
 
     const sortLabel = useMemo(() => {
-        const field =
-            SORT_FIELDS.find(i => i.key === sortField)?.label || "添加时间";
-        return `${field}${sortOrder === "asc" ? "↑" : "↓"}`;
-    }, [sortField, sortOrder]);
+        return (
+            SORT_FIELDS.find(i => i.key === sortField)?.label || "添加时间"
+        );
+    }, [sortField]);
 
     return (
         <View style={styles.wrapper}>
@@ -344,17 +345,18 @@ export default function SongFeed(props: IProps) {
                         </ThemeText>
                     </Pressable>
                     <Pressable
-                        style={[
-                            styles.orderBtn,
-                            { backgroundColor: colors.placeholder },
-                        ]}
+                        style={styles.orderBtn}
+                        hitSlop={8}
                         onPress={() =>
                             setSortOrder(prev =>
                                 prev === "asc" ? "desc" : "asc",
                             )
                         }>
-                        <ThemeText fontSize="description">
-                            {sortOrder === "asc" ? "正序" : "倒序"}
+                        <ThemeText
+                            fontSize="title"
+                            fontColor="primary"
+                            style={styles.orderArrow}>
+                            {sortOrder === "asc" ? "↑" : "↓"}
                         </ThemeText>
                     </Pressable>
                 </View>
@@ -377,6 +379,14 @@ export default function SongFeed(props: IProps) {
                     data={displaySongs}
                     keyExtractor={(item, index) =>
                         `${item.platform}-${item.id}-${index}`
+                    }
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={loading && displaySongs.length > 0}
+                            onRefresh={() => load(1, true, feedId)}
+                            colors={[colors.primary]}
+                            tintColor={colors.primary}
+                        />
                     }
                     ListEmptyComponent={
                         loading ? (
@@ -482,10 +492,12 @@ const styles = StyleSheet.create({
     sortActions: { flexDirection: "row", alignItems: "center" },
     sortBtn: { flexDirection: "row", alignItems: "center" },
     orderBtn: {
-        marginLeft: rpx(16),
-        paddingHorizontal: rpx(16),
-        paddingVertical: rpx(8),
-        borderRadius: rpx(16),
+        marginLeft: rpx(12),
+        paddingHorizontal: rpx(8),
+        paddingVertical: rpx(4),
+    },
+    orderArrow: {
+        lineHeight: rpx(36),
     },
     center: {
         flex: 1,

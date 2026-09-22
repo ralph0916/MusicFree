@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { StyleSheet, TextInput } from "react-native";
-import rpx, { vmax } from "@/utils/rpx";
+import { StyleSheet, View } from "react-native";
+import rpx from "@/utils/rpx";
 import PanelBase from "../base/panelBase";
 import PanelHeader from "../base/panelHeader";
+import Input from "@/components/base/input";
 import ThemeText from "@/components/base/themeText";
 import useColors from "@/hooks/useColors";
 import { hidePanel } from "../usePanel";
-import { loginQqByCookie } from "@/core/pluginManager/qqAuth";
+import { loginQqByPassword } from "@/core/pluginManager/qqAuth";
 import Toast from "@/utils/toast";
-import { ScrollView } from "react-native-gesture-handler";
 
 interface IProps {
     onSuccess?: () => void;
@@ -17,60 +17,72 @@ interface IProps {
 export default function QqLogin(props: IProps) {
     const { onSuccess } = props;
     const colors = useColors();
-    const [cookie, setCookie] = useState("");
-    const [saving, setSaving] = useState(false);
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [logging, setLogging] = useState(false);
 
-    const save = async () => {
+    const login = async () => {
+        if (!username.trim() || !password.trim()) {
+            Toast.warn("请输入 QQ 号和密码");
+            return;
+        }
         try {
-            setSaving(true);
-            const profile = loginQqByCookie(cookie);
-            Toast.success(`已登录：${profile.nickname || profile.uin}`);
+            setLogging(true);
+            const profile = await loginQqByPassword(
+                username.trim(),
+                password.trim(),
+            );
+            Toast.success(`登录成功：${profile.nickname || profile.uin}`);
             onSuccess?.();
             hidePanel();
         } catch (e: any) {
             Toast.warn(e?.message || "登录失败");
         } finally {
-            setSaving(false);
+            setLogging(false);
         }
     };
 
     return (
         <PanelBase
-            height={vmax(55)}
+            height={rpx(720)}
             keyboardAvoidBehavior="height"
             renderBody={() => (
                 <>
                     <PanelHeader
                         title="QQ 音乐登录"
                         onCancel={hidePanel}
-                        onOk={save}
-                        okText={saving ? "保存中" : "保存"}
+                        onOk={login}
+                        okText={logging ? "登录中" : "登录"}
                     />
-                    <ScrollView style={styles.body}>
+                    <View style={styles.body}>
                         <ThemeText
                             fontSize="description"
                             fontColor="textSecondary">
-                            在电脑浏览器打开 y.qq.com 并登录，按 F12 →
-                            Network，刷新后复制请求 Cookie（需包含 uin、qm_keyst
-                            等）。不支持破解 VIP。
+                            使用 QQ 号和密码登录。若触发安全验证码，请先在网页端
+                            y.qq.com 完成验证后再试。不支持破解 VIP。
                         </ThemeText>
-                        <TextInput
-                            value={cookie}
-                            onChangeText={setCookie}
-                            placeholder="粘贴 Cookie"
-                            placeholderTextColor={colors.textSecondary}
-                            multiline
+                        <Input
+                            value={username}
+                            onChangeText={setUsername}
+                            placeholder="QQ 号"
+                            keyboardType="number-pad"
+                            autoCapitalize="none"
                             style={[
                                 styles.input,
-                                {
-                                    backgroundColor: colors.placeholder,
-                                    color: colors.text,
-                                    height: rpx(280),
-                                    textAlignVertical: "top",
-                                },
+                                { backgroundColor: colors.placeholder },
                             ]}
                         />
-                    </ScrollView>
+                        <Input
+                            value={password}
+                            onChangeText={setPassword}
+                            placeholder="密码"
+                            secureTextEntry
+                            style={[
+                                styles.input,
+                                { backgroundColor: colors.placeholder },
+                            ]}
+                        />
+                    </View>
                 </>
             )}
         />
@@ -86,6 +98,6 @@ const styles = StyleSheet.create({
         marginTop: rpx(24),
         borderRadius: rpx(12),
         paddingHorizontal: rpx(20),
-        paddingVertical: rpx(16),
+        height: rpx(80),
     },
 });

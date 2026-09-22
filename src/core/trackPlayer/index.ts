@@ -1,6 +1,7 @@
 import { getCurrentDialog, showDialog } from "@/components/dialogs/useDialog";
 import {
     internalFakeSoundKey,
+    navidromePluginPlatform,
     sortIndexSymbol,
     timeStampSymbol,
 } from "@/constants/commonConst";
@@ -67,6 +68,9 @@ class TrackPlayer extends EventEmitter<{
     private serviceInited = false;
     // 播放队列索引map
     private playListIndexMap = createMediaIndexMap([] as IMusic.IMusicItem[]);
+    // NAS 流媒体偶发首播失败时，同曲重试一次再跳下一首
+    private playFailRetryKey: string | null = null;
+    private playFailRetryCount = 0;
 
 
     private static maxMusicQueueLength = 10000;
@@ -576,6 +580,9 @@ class TrackPlayer extends EventEmitter<{
             trace("获取音源成功", track);
             // 9. 设置音源
             await this.setTrackSource(track as Track);
+            // 成功换源后重置失败重试计数
+            this.playFailRetryKey = null;
+            this.playFailRetryCount = 0;
 
             // 10. 获取补充信息
             let info: Partial<IMusic.IMusicItem> | null = null;
@@ -904,7 +911,30 @@ class TrackPlayer extends EventEmitter<{
 
 
     private async handlePlayFail() {
-        // 如果自动跳转下一曲, 500s后自动跳转
+        const current = this.currentMusic;
+        // Navidrome 流地址偶发首请求失败：同曲换新 token 重试一次，避免直接跳下一首
+        if (
+            current?.platform === navidromePluginPlatform &&
+            current.id
+        ) {
+            const key = `${current.platform}@${current.id}`;
+            if (this.playFailRetryKey !== key) {
+                this.playFailRetryKey = key;
+                this.playFailRetryCount = 0;
+            }
+            if (this.playFailRetryCount < 1) {
+                this.playFailRetryCount += 1;
+                trace("Navidrome 播放失败，同曲重试", key);
+                await delay(350);
+                if (this.isCurrentMusic(current)) {
+                    await this.play(current, true);
+                }
+                return;
+            }
+        }
+        this.playFailRetryKey = null;
+        this.playFailRetryCount = 0;
+        // 如果自动跳转下一曲, 500ms后自动跳转
         if (!this.configService.getConfig("basic.autoStopWhenError")) {
             await delay(500);
             await this.skipToNext();

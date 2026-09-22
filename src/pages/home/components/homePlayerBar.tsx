@@ -125,10 +125,10 @@ function HomePlayerBar() {
             </Pressable>
 
             <View style={styles.actions}>
-                <MiniHeartButton color={colors.musicBarText} size={rpx(36)} />
+                <MiniHeartButton color={colors.musicBarText} size={rpx(44)} />
                 <Icon
                     name="skip-left"
-                    size={rpx(40)}
+                    size={rpx(52)}
                     color={colors.musicBarText}
                     style={styles.actionIcon}
                     onPress={() => TrackPlayer.skipToPrevious()}
@@ -150,20 +150,20 @@ function HomePlayerBar() {
                     }}>
                     <Icon
                         name={paused ? "play" : "pause"}
-                        size={rpx(30)}
+                        size={rpx(36)}
                         color="#fff"
                     />
                 </Pressable>
                 <Icon
                     name="skip-right"
-                    size={rpx(40)}
+                    size={rpx(52)}
                     color={colors.musicBarText}
                     style={styles.actionIcon}
                     onPress={() => TrackPlayer.skipToNext()}
                 />
                 <Icon
                     name="playlist"
-                    size={rpx(38)}
+                    size={rpx(46)}
                     color={colors.musicBarText}
                     style={styles.actionIcon}
                     onPress={() => showPanel("PlayList")}
@@ -181,9 +181,9 @@ const styles = StyleSheet.create({
         marginBottom: rpx(8),
         borderRadius: rpx(20),
         paddingTop: rpx(14),
-        paddingBottom: rpx(12),
+        paddingBottom: rpx(14),
         paddingLeft: rpx(16),
-        paddingRight: rpx(12),
+        paddingRight: rpx(16),
         elevation: 4,
         shadowColor: "#000",
         shadowOpacity: 0.1,
@@ -230,20 +230,22 @@ const styles = StyleSheet.create({
         fontSize: rpx(18),
     },
     actions: {
+        width: "100%",
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "flex-end",
-        marginTop: rpx(8),
+        justifyContent: "center",
+        marginTop: rpx(14),
+        gap: rpx(28),
     },
     actionIcon: {
-        marginLeft: rpx(14),
+        marginLeft: 0,
     },
     playBtn: {
-        width: rpx(52),
-        height: rpx(52),
-        borderRadius: rpx(26),
+        width: rpx(64),
+        height: rpx(64),
+        borderRadius: rpx(32),
         alignItems: "center",
         justifyContent: "center",
-        marginLeft: rpx(14),
+        marginLeft: 0,
     },
 });

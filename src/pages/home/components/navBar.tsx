@@ -26,7 +26,7 @@ export default function NavBar() {
                 }}
             />
             <ThemeText fontSize="title" fontWeight="bold" style={styles.brand}>
-                MusicFree
+                RalphMusic
             </ThemeText>
             <IconButton
                 accessibilityLabel="搜索"

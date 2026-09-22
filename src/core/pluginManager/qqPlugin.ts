@@ -127,7 +127,7 @@ const qqPluginDefine: IPlugin.IPluginDefine = {
     version: "1.0.0",
     appVersion: ">0.6.0",
     description:
-        "QQ 音乐：支持 Cookie 登录、搜索、排行榜、歌单（不支持破解 VIP）。",
+        "QQ 音乐：支持 QQ 号密码登录、搜索、排行榜、歌单（不支持破解 VIP）。",
     author: "private",
     primaryKey: ["id"],
     cacheControl: "no-cache",
@@ -137,7 +137,7 @@ const qqPluginDefine: IPlugin.IPluginDefine = {
         {
             key: "hint",
             name: "登录说明",
-            hint: "请在「我的」页粘贴 QQ 音乐网页版 Cookie 登录",
+            hint: "请在「我的」页使用 QQ 号和密码登录",
         },
     ],
 
@@ -471,6 +471,35 @@ export async function createQqPlaylist(name: string) {
         dissid: data?.req_0?.data?.dirId,
         dissname: name.trim(),
     });
+}
+
+export async function addSongsToQqPlaylist(
+    playlistId: string,
+    songIds: string[],
+) {
+    if (!isQqLoggedIn()) {
+        throw new Error("请先登录 QQ 音乐账号");
+    }
+    const data = await qqMusicu({
+        req_0: {
+            module: "music.musicasset.PlaylistDetailWrite",
+            method: "AddSongList",
+            param: {
+                dirId: Number(playlistId),
+                v_songInfo: songIds.map(id => ({
+                    songId: Number(id) || 0,
+                    songType: 0,
+                })),
+            },
+        },
+    });
+    if (data?.req_0?.code !== 0 && data?.req_0?.code !== undefined) {
+        // 兼容不同返回
+        if (data?.code && data.code !== 0) {
+            throw new Error(data?.req_0?.msg || data?.msg || "加入歌单失败");
+        }
+    }
+    return true;
 }
 
 export async function deleteQqPlaylist(playlistId: string) {

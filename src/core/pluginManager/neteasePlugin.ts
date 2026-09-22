@@ -434,6 +434,30 @@ export async function createNeteasePlaylist(name: string) {
     return mapSheet(data.playlist || { id: data.id, name });
 }
 
+export async function addSongsToNeteasePlaylist(
+    playlistId: string,
+    songIds: string[],
+) {
+    if (!isNeteaseLoggedIn()) {
+        throw new Error("请先登录网易云账号");
+    }
+    const ids = songIds.map(String);
+    const data = await neteaseWeapiPost(
+        "https://music.163.com/weapi/playlist/manipulate/tracks",
+        {
+            op: "add",
+            pid: playlistId,
+            trackIds: JSON.stringify(ids),
+            tracks: JSON.stringify(ids),
+        },
+    );
+    // 200 成功；502 表示部分已在歌单中，也视为成功
+    if (data?.code !== 200 && data?.code !== 502) {
+        throw new Error(data?.message || "加入歌单失败");
+    }
+    return true;
+}
+
 export async function deleteNeteasePlaylist(playlistId: string) {
     if (!isNeteaseLoggedIn()) {
         throw new Error("请先登录网易云账号");

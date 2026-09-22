@@ -62,9 +62,21 @@ function buildUrl(
     endpoint: string,
     auth: SubsonicAuth,
     params: Record<string, string | number | boolean | undefined> = {},
+    options?: { omitJsonFormat?: boolean },
 ) {
     const search = new URLSearchParams();
-    Object.entries({ ...auth, ...params }).forEach(([key, value]) => {
+    const authParams: Record<string, string> = {
+        u: auth.u,
+        t: auth.t,
+        s: auth.s,
+        v: auth.v,
+        c: auth.c,
+    };
+    // stream/download 是二进制流，不要带 f=json，否则部分环境下播放器首请求会失败
+    if (!options?.omitJsonFormat) {
+        authParams.f = auth.f;
+    }
+    Object.entries({ ...authParams, ...params }).forEach(([key, value]) => {
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -243,6 +255,18 @@ export async function isSongInNavidromePlaylist(
     };
 }
 
+export async function addSongsToNavidromePlaylist(
+    playlistId: string,
+    songIds: string[],
+) {
+    for (const songId of songIds) {
+        await request("updatePlaylist", {
+            playlistId,
+            songIdToAdd: songId,
+        });
+    }
+}
+
 export async function toggleSongInNavidromePlaylist(
     playlistName: string,
     songId: string,
@@ -280,7 +304,7 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
         "连接自建 Navidrome / Subsonic 兼容服务器，播放 NAS 本地音乐库。请在「用户变量」中填写服务器地址、用户名和密码。",
     author: "private",
     primaryKey: ["id"],
-    cacheControl: "no-cache",
+    cacheControl: "no-store",
     defaultSearchType: "music",
     supportedSearchType: ["music", "album", "artist", "sheet"],
     userVariables: [
@@ -371,6 +395,7 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
 
     async getMediaSource(musicItem, quality) {
         const config = ensureConfig();
+        // 每次播放都生成新的 salt/token，避免复用失效链接
         const auth = createAuth(config.username, config.password);
         const maxBitRateMap: Record<IMusic.IQualityKey, number> = {
             low: 128,
@@ -379,13 +404,26 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
             super: 0,
         };
         const maxBitRate = maxBitRateMap[quality] ?? 0;
-        return {
-            url: buildUrl(config.url, "stream", auth, {
+        // 不使用 estimateContentLength：转码流长度不准时 ExoPlayer 会首播报错并跳下一首
+        const url = buildUrl(
+            config.url,
+            "stream",
+            auth,
+            {
                 id: musicItem.id,
                 maxBitRate,
-                estimateContentLength: true,
-            }),
+                _: Date.now(),
+            },
+            { omitJsonFormat: true },
+        );
+        return {
+            url,
             quality,
+            headers: {
+                "User-Agent": "RalphMusic",
+                Accept: "*/*",
+                "Cache-Control": "no-store",
+            },
         };
     },
 

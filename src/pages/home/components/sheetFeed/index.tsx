@@ -3,6 +3,7 @@ import {
     ActivityIndicator,
     FlatList,
     Pressable,
+    RefreshControl,
     StyleSheet,
     View,
 } from "react-native";
@@ -193,6 +194,14 @@ export default function SheetFeed(props: IProps) {
                     data={sheets}
                     keyExtractor={(item, index) =>
                         `${item.platform}-${item.id}-${index}`
+                    }
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={loading && sheets.length > 0}
+                            onRefresh={load}
+                            colors={[colors.primary]}
+                            tintColor={colors.primary}
+                        />
                     }
                     ListEmptyComponent={
                         loading ? (
