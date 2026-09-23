@@ -17,7 +17,8 @@
     "commit-lint": "commitlint --edit",
     "lint-staged": "lint-staged",
     "connect-mumu": "adb kill-server & adb connect localhost:7555",
-    "build-android": "cd .\\android\\ && .\\gradlew assembleRelease",
+    "build-android": "cd .\\android\\ && .\\gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a",
+    "build-windows": "cd .\\desktop && npm run dist:win",
     "generate-assets": "node ./generator/generate-assets.mjs",
     "prepare": "husky"
   },

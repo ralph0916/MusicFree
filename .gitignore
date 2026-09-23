@@ -86,3 +86,20 @@ scripts/
 .expo
 dist/
 web-build/
+# Desktop (Electron)
+desktop/node_modules/
+desktop/.webpack/
+desktop/out/
+
+
+# Build / release artifacts (do not commit)
+*.apk
+*.aab
+desktop/*.zip
+desktop/*.exe
+desktop/*.nupkg
+desktop/out/
+desktop/.webpack/
+desktop/node_modules/
+android/app/build/
+android/app/release/
