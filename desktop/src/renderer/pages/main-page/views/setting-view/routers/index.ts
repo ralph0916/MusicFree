@@ -1,7 +1,6 @@
 /** 配置 */
 import About from "./About";
 import Backup from "./Backup";
-import Download from "./Download";
 import Lyric from "./Lyric";
 import Network from "./Network";
 import Normal from "./Normal";
@@ -17,10 +16,6 @@ export default [
     {
         id: "playMusic",
         component: PlayMusic,
-    },
-    {
-        id: "download",
-        component: Download,
     },
     {
         id: "lyric",

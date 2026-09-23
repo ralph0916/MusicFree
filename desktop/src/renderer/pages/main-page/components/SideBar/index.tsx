@@ -23,8 +23,13 @@ export default function () {
         },
         {
             iconName: "array-download-tray",
-            title: t("side_bar.download_management"),
-            route: "download",
+            title: t("side_bar.flac_download"),
+            route: "flac-download",
+        },
+        {
+            iconName: "pencil-square",
+            title: t("side_bar.music_tag"),
+            route: "music-tag",
         },
         {
             iconName: "folder-open",
@@ -45,7 +50,33 @@ export default function () {
 
     return (
         <div className="side-bar-container">
-            {options.map((item) => (
+            <div className="side-bar-brand">RalphMusic</div>
+            <div className="side-bar-section">发现</div>
+            {options.slice(0, 2).map((item) => (
+                <ListItem
+                    key={item.route}
+                    iconName={item.iconName}
+                    title={item.title}
+                    selected={routePathMatch?.params?.routePath === item.route}
+                    onClick={() => {
+                        navigate(`/main/${item.route}`);
+                    }}
+                ></ListItem>
+            ))}
+            <div className="side-bar-section">工具</div>
+            {options.slice(2, 4).map((item) => (
+                <ListItem
+                    key={item.route}
+                    iconName={item.iconName}
+                    title={item.title}
+                    selected={routePathMatch?.params?.routePath === item.route}
+                    onClick={() => {
+                        navigate(`/main/${item.route}`);
+                    }}
+                ></ListItem>
+            ))}
+            <div className="side-bar-section">库</div>
+            {options.slice(4).map((item) => (
                 <ListItem
                     key={item.route}
                     iconName={item.iconName}

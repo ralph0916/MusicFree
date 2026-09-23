@@ -78,11 +78,12 @@ $width: 290px;
   }
 
   & .music-cover {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     object-fit: cover;
     flex-shrink: 0;
-    border-radius: 4px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   }
 
   & .music-info {

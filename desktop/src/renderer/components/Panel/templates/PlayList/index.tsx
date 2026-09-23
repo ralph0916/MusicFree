@@ -10,7 +10,6 @@ import SvgAsset from "@/renderer/components/SvgAsset";
 import useVirtualList from "@/hooks/useVirtualList";
 import { rem } from "@/common/constant";
 import { showMusicContextMenu } from "@/renderer/components/MusicList";
-import MusicDownloaded from "@/renderer/components/MusicDownloaded";
 import Base from "../Base";
 import hotkeys from "hotkeys-js";
 import { Trans, useTranslation } from "react-i18next";
@@ -258,7 +257,6 @@ function _PlayListMusicItem(props: IPlayListMusicItemProps) {
         >
             <div className="playlist--options">
                 <MusicFavorite musicItem={musicItem} size={16}></MusicFavorite>
-                <MusicDownloaded musicItem={musicItem} size={16}></MusicDownloaded>
             </div>
             <div className="playlist--title" title={musicItem?.title}>
                 {musicItem?.title ?? "-"}

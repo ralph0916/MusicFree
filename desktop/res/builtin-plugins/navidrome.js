@@ -247,15 +247,18 @@ module.exports = {
     const params = {
       id: musicItem.id,
       maxBitRate: maxBitRate,
+      estimateContentLength: true,
+      _: Date.now(),
     };
-    // 仅原画/无损（maxBitRate=0）时附加 estimateContentLength
-    if (maxBitRate === 0) {
-      params.estimateContentLength = true;
-    }
     return {
       url: buildUrl(config.url, "stream", streamAuth, params),
       quality: quality,
       cacheControl: "no-store",
+      headers: {
+        "User-Agent": "RalphMusic",
+        Accept: "*/*",
+        "Cache-Control": "no-store",
+      },
     };
   },
   async getLyric(musicItem) {

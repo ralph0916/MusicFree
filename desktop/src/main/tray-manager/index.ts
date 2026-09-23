@@ -146,7 +146,7 @@ class TrayManager {
                 }`,
             );
         } else {
-            tray.setToolTip("MusicFree");
+            tray.setToolTip("RalphMusic");
         }
         if (musicItem) {
             const fullName = `${musicItem.title ?? t("media.unknown_title")}${musicItem.artist ? ` - ${musicItem.artist}` : ""

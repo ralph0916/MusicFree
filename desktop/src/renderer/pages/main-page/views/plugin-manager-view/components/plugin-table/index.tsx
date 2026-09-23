@@ -157,6 +157,38 @@ function renderOptions(info: any) {
                     {t("plugin.method_import_music_sheet")}
                 </ActionButton>
             </Condition>
+            <Condition condition={row.platform === "网易云"}>
+                <ActionButton
+                    style={{
+                        color: "#EC4141",
+                    }}
+                    onClick={() => {
+                        showModal("NeteaseLogin", {
+                            onSuccess() {
+                                // plugin cookie already synced
+                            },
+                        });
+                    }}
+                >
+                    账号登录
+                </ActionButton>
+            </Condition>
+            <Condition condition={row.platform === "QQ音乐"}>
+                <ActionButton
+                    style={{
+                        color: "#31C27C",
+                    }}
+                    onClick={() => {
+                        showModal("QqLogin", {
+                            onSuccess() {
+                                // plugin cookie already synced
+                            },
+                        });
+                    }}
+                >
+                    账号登录
+                </ActionButton>
+            </Condition>
             <Condition condition={row.userVariables?.length}>
                 <ActionButton
                     style={{
@@ -172,7 +204,9 @@ function renderOptions(info: any) {
                         });
                     }}
                 >
-                    {t("plugin.prop_user_variable")}
+                    {row.platform === "网易云" || row.platform === "QQ音乐"
+                        ? "高级设置"
+                        : t("plugin.prop_user_variable")}
                 </ActionButton>
             </Condition>
         </div>

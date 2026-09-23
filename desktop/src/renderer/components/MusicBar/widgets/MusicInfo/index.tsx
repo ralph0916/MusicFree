@@ -10,7 +10,6 @@ import albumImg from "@/assets/imgs/album-cover.jpg";
 import { useTranslation } from "react-i18next";
 import { useCurrentMusic, useProgress } from "@renderer/core/track-player/hooks";
 import { hidePanel, showPanel } from "@renderer/components/Panel";
-import MusicDownloaded from "@renderer/components/MusicDownloaded";
 import PluginManager from "@shared/plugin-manager/renderer";
 
 export default function MusicInfo() {
@@ -92,7 +91,6 @@ export default function MusicInfo() {
                     ></SvgAsset>
                 </div>
                 <MusicFavorite musicItem={musicItem} size={22}></MusicFavorite>
-                <MusicDownloaded musicItem={musicItem} size={22}></MusicDownloaded>
                 <div role="button"
                     data-disabled={!PluginManager.isSupportFeatureMethod(musicItem?.platform, "getMusicComments")}
                     onClick={() => {

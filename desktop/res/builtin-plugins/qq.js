@@ -1,6 +1,6 @@
 /**
- * MusicFree Desktop 内置插件：QQ 音乐
- * 通过粘贴含 uin / qm_keyst 的 Cookie 使用（不支持破解 VIP）
+ * RalphMusic Desktop 内置插件：QQ 音乐
+ * 推荐在「插件管理 → 账号登录」使用密码 / Cookie / 扫码登录
  */
 /* global env */
 const axios = require("axios");
@@ -192,7 +192,7 @@ module.exports = {
   version: "1.0.0",
   appVersion: ">0.6.0",
   description:
-    "QQ 音乐：粘贴含 uin 与 qm_keyst 的 Cookie 后支持搜索、播放、歌词、榜单与歌单（不支持破解 VIP）。",
+    "QQ 音乐：支持密码、Cookie、扫码登录；支持搜索、播放、歌词、榜单与歌单（不支持破解 VIP）。",
   author: "private",
   primaryKey: ["id"],
   cacheControl: "no-cache",
@@ -201,8 +201,8 @@ module.exports = {
   userVariables: [
     {
       key: "cookie",
-      name: "Cookie",
-      hint: "从浏览器登录 y.qq.com 后粘贴 Cookie（需含 uin、qm_keyst）",
+      name: "Cookie（可选）",
+      hint: "一般无需手动填写；请优先使用「账号登录」",
     },
   ],
 

@@ -1,6 +1,5 @@
 import SvgAsset from "../SvgAsset";
 import "./index.scss";
-import { showModal } from "../Modal";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
 import HeaderNavigator from "./widgets/Navigator";
@@ -96,15 +95,6 @@ export default function AppHeader() {
             </div>
 
             <div className="right-part">
-                <div
-                    role="button"
-                    className="header-button sparkles-icon"
-                    onClick={() => {
-                        showModal("Sparkles");
-                    }}
-                >
-                    <SvgAsset iconName="sparkles"></SvgAsset>
-                </div>
                 <div
                     role="button"
                     className="header-button"

@@ -15,7 +15,7 @@ import LyricParser from "@/renderer/utils/lyric-parser";
 import { getLinkedLyric, unlinkLyric } from "@/renderer/core/link-lyric";
 import { getMediaPrimaryKey } from "@/common/media-util";
 import { useTranslation } from "react-i18next";
-import { useLyric } from "@renderer/core/track-player/hooks";
+import { useLyric, useProgress } from "@renderer/core/track-player/hooks";
 import trackPlayer from "@renderer/core/track-player";
 import { dialogUtil, fsUtil } from "@shared/utils/renderer";
 
@@ -23,6 +23,7 @@ export default function Lyric() {
     const lyricContext = useLyric();
     const lyricParser = lyricContext?.parser;
     const currentLrc = lyricContext?.currentLrc;
+    const { currentTime } = useProgress();
 
     const containerRef = useRef<HTMLDivElement>();
 
@@ -131,30 +132,68 @@ export default function Lyric() {
                                 </>
                             }
                         >
-                            {lyricParser?.getLyricItems?.()?.map((lyricItem, index) => (
-                                <>
-                                    <div
-                                        key={index}
-                                        className="lyric-item"
-                                        id={`lyric-item-id-${index}`}
-                                        data-highlight={currentLrc?.index === index}
-                                    >
-                                        {lyricItem.lrc}
-                                    </div>
-                                    <IfTruthy
-                                        condition={lyricParser?.hasTranslation && showTranslation}
-                                    >
+                            {lyricParser?.getLyricItems?.()?.map((lyricItem, index) => {
+                                const isCurrent = currentLrc?.index === index;
+                                let progress = 0;
+                                if (isCurrent) {
+                                    const items = lyricParser.getLyricItems();
+                                    const start = lyricItem.time;
+                                    const end = items[index + 1]
+                                        ? items[index + 1].time
+                                        : start + 5;
+                                    const span = Math.max(0.01, end - start);
+                                    progress = Math.min(
+                                        1,
+                                        Math.max(0, (currentTime - start) / span),
+                                    );
+                                }
+                                return (
+                                    <>
                                         <div
-                                            key={"tr" + index}
-                                            className="lyric-item lyric-item-translation"
-                                            id={`tr-lyric-item-id-${index}`}
-                                            data-highlight={currentLrc?.index === index}
+                                            key={index}
+                                            className="lyric-item"
+                                            id={`lyric-item-id-${index}`}
+                                            data-highlight={isCurrent}
                                         >
-                                            {lyricItem.translation}
+                                            {isCurrent ? (
+                                                <span className="lyric-progressive">
+                                                    <span className="lyric-base">
+                                                        {lyricItem.lrc}
+                                                    </span>
+                                                    <span
+                                                        className="lyric-fill"
+                                                        style={{
+                                                            width: `${Math.max(
+                                                                progress * 100,
+                                                                progress > 0 ? 1 : 0,
+                                                            )}%`,
+                                                        }}
+                                                    >
+                                                        <span>{lyricItem.lrc}</span>
+                                                    </span>
+                                                </span>
+                                            ) : (
+                                                lyricItem.lrc
+                                            )}
                                         </div>
-                                    </IfTruthy>
-                                </>
-                            ))}
+                                        <IfTruthy
+                                            condition={
+                                                lyricParser?.hasTranslation &&
+                                                showTranslation
+                                            }
+                                        >
+                                            <div
+                                                key={"tr" + index}
+                                                className="lyric-item lyric-item-translation"
+                                                id={`tr-lyric-item-id-${index}`}
+                                                data-highlight={isCurrent}
+                                            >
+                                                {lyricItem.translation}
+                                            </div>
+                                        </IfTruthy>
+                                    </>
+                                );
+                            })}
                         </Condition>
                     </Condition>
                 }

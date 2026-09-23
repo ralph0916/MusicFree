@@ -7,9 +7,10 @@ import Header from "./widgets/Header";
 import Lyric from "./widgets/Lyric";
 import Condition from "../Condition";
 import { useTranslation } from "react-i18next";
-import { useCurrentMusic } from "@renderer/core/track-player/hooks";
+import { useCurrentMusic, usePlayerState } from "@renderer/core/track-player/hooks";
 import { useEffect } from "react";
 import { musicDetailShownStore } from "@renderer/components/MusicDetail/store";
+import { PlayerState } from "@/common/constant";
 
 export const isMusicDetailShown = musicDetailShownStore.getValue;
 export const useMusicDetailShown = musicDetailShownStore.useValue;
@@ -17,6 +18,8 @@ export const useMusicDetailShown = musicDetailShownStore.useValue;
 function MusicDetail() {
     const musicItem = useCurrentMusic();
     const musicDetailShown = musicDetailShownStore.useValue();
+    const playerState = usePlayerState();
+    const playing = playerState === PlayerState.Playing;
 
     const { t } = useTranslation();
 
@@ -75,11 +78,28 @@ function MusicDetail() {
             </div>
             <div className="music-body">
                 <div className="music-album-options">
-                    <img
-                        className="music-album shadow"
-                        onError={setFallbackAlbum}
-                        src={musicItem?.artwork ?? albumImg}
-                    ></img>
+                    <div className={`vinyl-stage ${playing ? "is-playing" : ""}`}>
+                        <div className="vinyl-platter"></div>
+                        <div className="vinyl-disc">
+                            <div className="vinyl-groove"></div>
+                            <div className="vinyl-groove vinyl-groove--2"></div>
+                            <div className="vinyl-groove vinyl-groove--3"></div>
+                            <div className="vinyl-label">
+                                <img
+                                    className="music-album"
+                                    onError={setFallbackAlbum}
+                                    src={musicItem?.artwork ?? albumImg}
+                                    alt=""
+                                />
+                                <div className="vinyl-spindle"></div>
+                            </div>
+                        </div>
+                        <div className={`vinyl-arm ${playing ? "on" : "off"}`}>
+                            <div className="vinyl-arm-pivot"></div>
+                            <div className="vinyl-arm-bar"></div>
+                            <div className="vinyl-arm-head"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <Lyric></Lyric>

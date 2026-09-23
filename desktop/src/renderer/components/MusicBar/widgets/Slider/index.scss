@@ -12,6 +12,11 @@
   align-items: center;
   --slider-height: 2px;
 
+  &[data-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
   &:hover,
   &:active {
     --slider-height: 6px;

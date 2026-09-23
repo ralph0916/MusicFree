@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import "./index.scss";
 import trackPlayer from "@renderer/core/track-player";
 import { useProgress } from "@renderer/core/track-player/hooks";
+import { toast } from "react-toastify";
 
 export default function Slider() {
     const [seekPercent, _setSeekPercent] = useState<number | null>(null);
     const seekPercentRef = useRef<number | null>(null);
     const { currentTime, duration } = useProgress();
     const isPressedRef = useRef(false);
+    const seekable = isFinite(duration) && duration > 1;
 
     function setSeekPercent(value: number | null) {
         _setSeekPercent(value);
@@ -20,11 +22,20 @@ export default function Slider() {
                 setSeekPercent(Math.max(0, Math.min(1, e.clientX / window.innerWidth)));
             }
         };
-        const onMouseUp = (e: MouseEvent) => {
+        const onMouseUp = () => {
             if (isPressedRef.current) {
                 isPressedRef.current = false;
                 const realProgress = trackPlayer.progress;
-                trackPlayer.seekTo(realProgress.duration * seekPercentRef.current);
+                if (!(realProgress.duration > 1) || seekPercentRef.current == null) {
+                    setSeekPercent(null);
+                    toast.warn("当前歌曲时长未就绪，暂无法拖动进度");
+                    return;
+                }
+                let seekTo = realProgress.duration * seekPercentRef.current;
+                if (seekTo >= realProgress.duration - 1) {
+                    seekTo = Math.max(0, realProgress.duration - 1);
+                }
+                trackPlayer.seekTo(seekTo);
                 setSeekPercent(null);
             }
         };
@@ -38,15 +49,22 @@ export default function Slider() {
     return (
         <div
             className="music-bar--slider-container"
-            onMouseDown={(e) => {
-                if (isFinite(duration) && duration) {
+            data-disabled={!seekable}
+            onMouseDown={() => {
+                if (seekable) {
                     isPressedRef.current = true;
                 }
             }}
             onClick={(e) => {
-                if (isFinite(duration) && duration) {
-                    trackPlayer.seekTo((duration * e.clientX) / window.innerWidth);
+                if (!seekable) {
+                    toast.warn("当前歌曲时长未就绪，暂无法拖动进度");
+                    return;
                 }
+                let seekTo = (duration * e.clientX) / window.innerWidth;
+                if (seekTo >= duration - 1) {
+                    seekTo = Math.max(0, duration - 1);
+                }
+                trackPlayer.seekTo(seekTo);
             }}
         >
             <div className="bar"></div>

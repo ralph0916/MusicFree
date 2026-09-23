@@ -11,7 +11,7 @@ const _defaultAppConfig: IAppConfig =  {
     "playMusic.whenDeviceRemoved": "play",
     "normal.taskbarThumb": "window",
     "normal.closeBehavior": "minimize",
-    "normal.checkUpdate": true,
+    "normal.checkUpdate": false,
     "normal.maxHistoryLength": 30,
     "download.defaultQuality": "standard",
     "download.whenQualityMissing": "lower",

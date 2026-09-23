@@ -18,10 +18,6 @@ export default function Normal() {
     return (
         <div className="setting-view--normal-container">
             <CheckBoxSettingItem
-                label={t("settings.normal.check_update")}
-                keyPath="normal.checkUpdate"
-            ></CheckBoxSettingItem>
-            <CheckBoxSettingItem
                 label={t("settings.normal.auto_load_more")}
                 keyPath="normal.autoLoadMore"
             ></CheckBoxSettingItem>

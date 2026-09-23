@@ -11,31 +11,10 @@ import rpx from "@/utils/rpx";
 import useColors from "@/hooks/useColors";
 import ThemeText from "@/components/base/themeText";
 import PersistStatus from "@/utils/persistStatus";
-import pluginMeta from "@/core/pluginManager/meta";
-import { navidromePluginPlatform } from "@/constants/commonConst";
 import Toast from "@/utils/toast";
 import Icon from "@/components/base/icon.tsx";
 
-function deriveDefaultMusicTagUrl(): string {
-    const vars = pluginMeta.getUserVariables(navidromePluginPlatform) ?? {};
-    let url = (vars.url ?? "").trim().replace(/\/+$/, "");
-    if (!url) {
-        return "";
-    }
-    if (!/^https?:\/\//i.test(url)) {
-        url = `http://${url}`;
-    }
-    try {
-        const u = new URL(url);
-        u.port = "8002";
-        u.pathname = "/";
-        u.search = "";
-        u.hash = "";
-        return u.toString().replace(/\/+$/, "");
-    } catch {
-        return "";
-    }
-}
+const DEFAULT_MUSIC_TAG_URL = "https://ralphchen.myds.me:12831";
 
 export default function MusicTagTab() {
     const colors = useColors();
@@ -51,11 +30,11 @@ export default function MusicTagTab() {
         if (custom) {
             return custom;
         }
-        return deriveDefaultMusicTagUrl();
+        return DEFAULT_MUSIC_TAG_URL;
     }, [saved]);
 
     const openEdit = () => {
-        setDraft(url || "http://192.168.1.10:8002");
+        setDraft(url || DEFAULT_MUSIC_TAG_URL);
         setEditing(true);
     };
 
@@ -81,15 +60,15 @@ export default function MusicTagTab() {
                     fontSize="description"
                     fontColor="textSecondary"
                     style={styles.hint}>
-                    Docker 镜像 xhongc/music_tag_web:latest，默认端口 8002。可编辑
-                    NAS 音乐的封面、歌词、标题、歌手等标签。
+                    默认：{DEFAULT_MUSIC_TAG_URL}。可编辑 NAS
+                    音乐的封面、歌词、标题、歌手等标签。
                 </ThemeText>
                 <TextInput
                     value={draft}
                     onChangeText={setDraft}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    placeholder="http://192.168.x.x:8002"
+                    placeholder={DEFAULT_MUSIC_TAG_URL}
                     placeholderTextColor={colors.textSecondary}
                     style={[
                         styles.input,
@@ -112,22 +91,6 @@ export default function MusicTagTab() {
                         <ThemeText color="#fff">保存</ThemeText>
                     </Pressable>
                 </View>
-            </View>
-        );
-    }
-
-    if (!url) {
-        return (
-            <View style={[styles.empty, { backgroundColor: colors.pageBackground }]}>
-                <ThemeText fontSize="content" style={{ textAlign: "center" }}>
-                    请先配置 MusicTag 地址，或在「我的」中配置 Navidrome
-                    服务器（将自动使用同主机 :8002）
-                </ThemeText>
-                <Pressable
-                    style={[styles.btn, { backgroundColor: colors.primary, marginTop: rpx(32) }]}
-                    onPress={openEdit}>
-                    <ThemeText color="#fff">填写地址</ThemeText>
-                </Pressable>
             </View>
         );
     }
@@ -198,12 +161,6 @@ const styles = StyleSheet.create({
         right: 0,
         zIndex: 2,
         alignItems: "center",
-    },
-    empty: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: rpx(48),
     },
     title: { marginTop: rpx(24), marginHorizontal: rpx(24) },
     hint: {

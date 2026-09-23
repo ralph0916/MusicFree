@@ -38,12 +38,12 @@ export default function Backup() {
                     undefined,
                     0,
                 );
-                if (!(await client.exists("/MusicFree"))) {
-                    await client.createDirectory("/MusicFree");
+                if (!(await client.exists("/RalphMusic"))) {
+                    await client.createDirectory("/RalphMusic");
                 }
                 // 临时文件
                 await client.putFileContents(
-                    "/MusicFree/MusicFreeBackup.json",
+                    "/RalphMusic/RalphMusicBackup.json",
                     backUp,
                     {
                         overwrite: true,
@@ -78,13 +78,13 @@ export default function Backup() {
                     password: password,
                 });
 
-                if (!(await client.exists("/MusicFree/MusicFreeBackup.json"))) {
+                if (!(await client.exists("/RalphMusic/RalphMusicBackup.json"))) {
                     throw new Error(
                         t("settings.backup.webdav_backup_file_not_exist"),
                     );
                 }
                 const resumeData = await client.getFileContents(
-                    "/MusicFree/MusicFreeBackup.json",
+                    "/RalphMusic/RalphMusicBackup.json",
                     {
                         format: "text",
                     },

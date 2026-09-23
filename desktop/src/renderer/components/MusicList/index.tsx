@@ -16,7 +16,6 @@ import trackPlayer from "@renderer/core/track-player";
 import Condition, { IfTruthy } from "../Condition";
 import Empty from "../Empty";
 import MusicFavorite from "../MusicFavorite";
-import MusicDownloaded from "../MusicDownloaded";
 import { localPluginName, RequestStateCode } from "@/common/constant";
 import BottomLoadingState from "../BottomLoadingState";
 import { IContextMenuItem, showContextMenu } from "../ContextMenu";
@@ -25,14 +24,11 @@ import { CSSProperties, memo, useCallback, useEffect, useRef, useState } from "r
 import { showModal } from "../Modal";
 import useVirtualList from "@/hooks/useVirtualList";
 import hotkeys from "hotkeys-js";
-import Downloader from "@/renderer/core/downloader";
 import { toast } from "react-toastify";
 import SwitchCase from "../SwitchCase";
 import SvgAsset from "../SvgAsset";
-import musicSheetDB from "@/renderer/core/db/music-sheet-db";
 import DragReceiver, { startDrag } from "../DragReceiver";
 import { i18n } from "@/shared/i18n/renderer";
-import isLocalMusic from "@/renderer/utils/is-local-music";
 import AppConfig from "@shared/app-config/renderer";
 import { shellUtil } from "@shared/utils/renderer";
 
@@ -75,7 +71,6 @@ const columnDef: ColumnDef<IMusic.IMusicItem>[] = [
         cell: (info) => (
             <div className="music-list-operations">
                 <MusicFavorite musicItem={info.row.original} size={18}></MusicFavorite>
-                <MusicDownloaded musicItem={info.row.original}></MusicDownloaded>
             </div>
         ),
         enableResizing: false,
@@ -213,79 +208,20 @@ export function showMusicContextMenu(
 
     menuItems.push(
         {
-            title: i18n.t("common.download"),
-            icon: "array-download-tray",
-            show: isArray
-                ? !musicItems.every(
-                    (item) => isLocalMusic(item) || Downloader.isDownloaded(item),
-                )
-                : !isLocalMusic(musicItems) && !Downloader.isDownloaded(musicItems),
-            onClick() {
-                Downloader.startDownload(musicItems);
-            },
-        },
-        {
-            title: i18n.t("music_list_context_menu.delete_local_download"),
-            icon: "trash",
-            show:
-                (isArray && musicItems.every((it) => Downloader.isDownloaded(it))) ||
-                (!isArray && Downloader.isDownloaded(musicItems)),
-            async onClick() {
-                const [isSuccess, info] = await Downloader.removeDownloadedMusic(
-                    musicItems,
-                    true,
-                );
-                if (isSuccess) {
-                    if (isArray) {
-                        toast.success(
-                            i18n.t(
-                                "music_list_context_menu.delete_local_downloaded_songs_success",
-                                {
-                                    musicNums: musicItems.length,
-                                },
-                            ),
-                        );
-                    } else {
-                        toast.success(
-                            i18n.t(
-                                "music_list_context_menu.delete_local_downloaded_song_success",
-                                {
-                                    songName: (musicItems as IMusic.IMusicItem).title,
-                                },
-                            ),
-                        );
-                    }
-                } else if (info?.msg) {
-                    toast.error(info.msg);
-                }
-            },
-        },
-        {
             title: i18n.t(
                 "music_list_context_menu.reveal_local_music_in_file_explorer",
             ),
             icon: "folder-open",
-            show:
-                !isArray &&
-                (Downloader.isDownloaded(musicItems) ||
-                    musicItems?.platform === localPluginName),
+            show: !isArray && musicItems?.platform === localPluginName,
             async onClick() {
                 try {
                     if (!isArray) {
-                        let realTimeMusicItem = musicItems;
-                        if (musicItems.platform !== localPluginName) {
-                            realTimeMusicItem = await musicSheetDB.musicStore.get([
-                                musicItems.platform,
-                                musicItems.id,
-                            ]);
-                        }
-
-                        const downloadPath = getInternalData<IMusic.IMusicItemInternalData>(
-                            realTimeMusicItem,
+                        const localPath = getInternalData<IMusic.IMusicItemInternalData>(
+                            musicItems,
                             "downloadData",
-                        )?.path;
+                        )?.path || (musicItems as any)?.$path;
 
-                        const result = await shellUtil.showItemInFolder(downloadPath);
+                        const result = await shellUtil.showItemInFolder(localPath);
                         if (!result) {
                             throw new Error();
                         }

@@ -73,10 +73,35 @@ $height: 100%;
     opacity: 0.8;
 
     &[data-highlight="true"] {
-      color: var(--primaryColor);
+      color: var(--textColor);
       font-size: 1.2em;
       font-weight: 600;
       opacity: 1;
+    }
+  }
+
+  & .lyric-progressive {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  & .lyric-base {
+    display: block;
+  }
+
+  & .lyric-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    color: var(--primaryColor);
+    white-space: nowrap;
+
+    & > span {
+      display: inline-block;
     }
   }
 

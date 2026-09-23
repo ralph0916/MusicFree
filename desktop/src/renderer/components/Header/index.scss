@@ -1,7 +1,11 @@
 .header-container {
   width: 100vw;
-  height: var(--appHeaderHeight, 54px);
-  background-color: var(--primaryColor);
+  height: var(--appHeaderHeight, 56px);
+  background: linear-gradient(
+    90deg,
+    var(--primaryColor) 0%,
+    color-mix(in srgb, var(--primaryColor) 82%, #000) 100%
+  );
   display: flex;
   box-sizing: border-box;
   justify-content: space-between;
@@ -12,6 +16,7 @@
   font-size: 1rem;
   position: relative;
   z-index: 2000;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 
   & .left-part {
     display: flex;
@@ -34,19 +39,26 @@
       -webkit-app-region: none;
       background-color: var(
         --headerPlaceholderColor,
-        rgba($color: #000, $alpha: 0.14)
+        rgba($color: #000, $alpha: 0.18)
       );
       position: relative;
-      min-width: 220px;
-      border-radius: 8px;
-      padding: 0.5rem 8px;
+      min-width: 260px;
+      border-radius: 999px;
+      padding: 0.45rem 12px;
       display: flex;
       align-items: center;
       margin-left: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+
+      &:focus-within {
+        background-color: rgba(0, 0, 0, 0.28);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+      }
 
       & .header-search-input {
         flex: auto;
-        font-size: 1rem;
+        font-size: 0.95rem;
         line-height: 1.2rem;
         outline: none;
         border: none;
@@ -62,7 +74,7 @@
       }
 
       & .search-submit {
-        $box-size: 1.3em;
+        $box-size: 1.25em;
         margin-left: 2px;
         width: #{$box-size};
         height: #{$box-size};
@@ -92,58 +104,37 @@
     justify-content: flex-end;
     align-items: center;
     -webkit-app-region: none;
-    padding-right: 16px;
-    gap: 4px;
+    padding-right: 14px;
+    gap: 2px;
 
     & .header-divider {
       height: 16px;
       width: 1px;
       opacity: 0.2;
       background-color: var(--headerTextColor);
-    }
-
-    & .sparkles-icon:hover {
-      animation: vibrate 0.3s linear infinite both;
+      margin: 0 6px;
     }
 
     & .header-button {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 26px;
-      height: 20px;
-      opacity: 0.6;
+      width: 30px;
+      height: 28px;
+      border-radius: 8px;
+      opacity: 0.72;
       cursor: pointer;
+      transition: opacity 0.12s ease, background 0.12s ease;
 
       &:hover {
         opacity: 1;
+        background: rgba(255, 255, 255, 0.12);
       }
 
       & svg {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
       }
     }
-  }
-}
-
-@keyframes vibrate {
-  0% {
-    transform: translate(0);
-  }
-  20% {
-    transform: translate(-1px, 1px);
-  }
-  40% {
-    transform: translate(-1px, -1px);
-  }
-  60% {
-    transform: translate(1px, 1px);
-  }
-  80% {
-    transform: translate(1px, -1px);
-  }
-  100% {
-    transform: translate(0);
   }
 }

@@ -151,6 +151,8 @@
     "toplist": "Top Charts",
     "recommend_sheets": "Popular Playlists",
     "download_management": "Download Management",
+    "music_tag": "MusicTag",
+    "flac_download": "FLAC Download",
     "local_music": "Local Music",
     "plugin_management": "Plugin Management",
 
@@ -261,7 +263,7 @@
       "short_cut": "Shortcuts",
       "network": "Network",
       "backup": "Backup & Restore",
-      "about": "About MusicFree"
+      "about": "About RalphMusic"
     },
     "normal": {
       "check_update": "Check for updates on startup",

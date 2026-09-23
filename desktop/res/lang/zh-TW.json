@@ -151,6 +151,8 @@
     "toplist": "排行榜",
     "recommend_sheets": "推薦歌單",
     "download_management": "下載管理",
+    "music_tag": "標籤編輯",
+    "flac_download": "無損下載",
     "local_music": "本地音樂",
     "plugin_management": "插件管理",
 
@@ -261,7 +263,7 @@
       "short_cut": "快捷鍵",
       "network": "網絡",
       "backup": "備份與恢復",
-      "about": "關於 MusicFree"
+      "about": "關於 RalphMusic"
     },
     "normal": {
       "check_update": "啟動應用時檢查更新",

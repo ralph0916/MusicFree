@@ -1,6 +1,6 @@
 .music-bar-container {
   width: 100vw;
-  height: var(--appMusicBarHeight, 64px);
+  height: var(--appMusicBarHeight, 68px);
   border-top: 1px solid var(--dividerColor);
   flex-shrink: 0;
   display: flex;
@@ -8,4 +8,7 @@
   user-select: none;
   position: relative;
   z-index: 4000;
+  background: color-mix(in srgb, var(--backgroundColor, #151515) 92%, #000);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
 }

@@ -11,9 +11,10 @@ import RecommendSheetsView from "./views/recommend-sheets-view";
 import SettingView from "./views/setting-view";
 import LocalMusicView from "./views/local-music-view";
 import Empty from "@/renderer/components/Empty";
-import DownloadView from "./views/download-view";
 import ThemeView from "./views/theme-view";
 import RecentlyPlayView from "./views/recently-play-view";
+import MusicTagView from "./views/music-tag-view";
+import FlacDownloadView from "./views/flac-download-view";
 
 import "./index.scss";
 
@@ -52,7 +53,11 @@ export default function MainPage() {
                     path="local-music"
                     element={<LocalMusicView></LocalMusicView>}
                 ></Route>
-                <Route path="download" element={<DownloadView></DownloadView>}></Route>
+                <Route path="music-tag" element={<MusicTagView></MusicTagView>}></Route>
+                <Route
+                    path="flac-download"
+                    element={<FlacDownloadView></FlacDownloadView>}
+                ></Route>
                 <Route path="setting" element={<SettingView></SettingView>}></Route>
                 <Route path="theme" element={<ThemeView></ThemeView>}></Route>
                 <Route

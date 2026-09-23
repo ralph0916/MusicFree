@@ -3,7 +3,6 @@ import MusicSheet from "../core/music-sheet";
 import trackPlayer from "../core/track-player";
 import localMusic from "../core/local-music";
 import { setAutoFreeze } from "immer";
-import Downloader from "../core/downloader";
 import AppConfig from "@shared/app-config/renderer";
 import { setupI18n } from "@/shared/i18n/renderer";
 import ThemePack from "@/shared/themepack/renderer";
@@ -37,7 +36,6 @@ export default async function () {
     setupCommandAndEvents();
     setupDeviceChange();
     localMusic.setupLocalMusic();
-    await Downloader.setupDownloader();
     setupRecentlyPlaylist();
     // 本地服务
     ServiceManager.setup();

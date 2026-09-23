@@ -59,7 +59,8 @@ async function getPath(pathName: "home" | "appData" | "userData" | "sessionData"
 }
 
 async function checkUpdate() {
-    return await ipcRenderer.invoke("@shared/utils/check-update");
+    // 已禁用上游更新检查
+    return null;
 }
 
 async function getCacheSize() {
