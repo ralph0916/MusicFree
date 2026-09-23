@@ -8,6 +8,7 @@ import TrackPlayer, {
     useCurrentMusic,
     useProgress,
 } from "@/core/trackPlayer";
+import Toast from "@/utils/toast";
 
 interface ITimeLabelProps {
     time: number;
@@ -20,17 +21,21 @@ function TimeLabel(props: ITimeLabelProps) {
 }
 
 export default function SeekBar() {
-    const progress = useProgress(1000);
+    const progress = useProgress(250);
     const musicItem = useCurrentMusic();
     const [tmpProgress, setTmpProgress] = useState<number | null>(null);
     const slidingRef = useRef(false);
 
-    const duration = useMemo(() => {
+    // 显示用：优先播放器时长，否则元数据
+    const displayDuration = useMemo(() => {
         if (progress.duration > 0) {
             return progress.duration;
         }
         return Number(musicItem?.duration) || 0;
     }, [progress.duration, musicItem?.duration]);
+
+    // 真正可 seek 的时长必须来自播放器，否则拖动会被 ExoPlayer 重置到开头
+    const seekable = progress.duration > 1;
 
     return (
         <View style={style.wrapper}>
@@ -41,7 +46,8 @@ export default function SeekBar() {
                 maximumTrackTintColor={"#999999"}
                 thumbTintColor={"#dddddd"}
                 minimumValue={0}
-                maximumValue={Math.max(duration, 0.1)}
+                maximumValue={Math.max(displayDuration, 0.1)}
+                disabled={!seekable}
                 onSlidingStart={() => {
                     slidingRef.current = true;
                 }}
@@ -53,15 +59,23 @@ export default function SeekBar() {
                 onSlidingComplete={val => {
                     slidingRef.current = false;
                     setTmpProgress(null);
-                    let seekTo = val;
-                    if (duration > 2 && seekTo >= duration - 2) {
-                        seekTo = duration - 2;
+                    if (!seekable) {
+                        Toast.warn("当前歌曲时长未就绪，暂无法拖动进度");
+                        return;
+                    }
+                    const max = progress.duration;
+                    let seekTo = Math.min(Math.max(0, val), max);
+                    if (seekTo >= max - 1) {
+                        seekTo = Math.max(0, max - 1);
                     }
                     TrackPlayer.seekTo(seekTo);
                 }}
-                value={Math.min(progress.position, duration || progress.position)}
+                value={Math.min(
+                    progress.position,
+                    displayDuration || progress.position,
+                )}
             />
-            <TimeLabel time={duration} />
+            <TimeLabel time={displayDuration} />
         </View>
     );
 }

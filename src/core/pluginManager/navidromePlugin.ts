@@ -431,8 +431,7 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
             super: 0,
         };
         const maxBitRate = maxBitRateMap[quality] ?? 0;
-        // 原文件(maxBitRate=0)带 estimateContentLength，便于 ExoPlayer 拿到时长与快进；
-        // 转码流长度不准，不带该参数，避免首播失败。
+        // 始终带 estimateContentLength，便于播放器拿到真实时长从而支持拖动进度
         const url = buildUrl(
             config.url,
             "stream",
@@ -440,9 +439,7 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
             {
                 id: musicItem.id,
                 maxBitRate,
-                ...(maxBitRate === 0
-                    ? { estimateContentLength: true }
-                    : {}),
+                estimateContentLength: true,
                 _: Date.now(),
             },
             { omitJsonFormat: true },
@@ -450,6 +447,9 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
         return {
             url,
             quality,
+            // 把元数据时长一并交给播放器
+            // @ts-ignore
+            duration: Number(musicItem.duration) || undefined,
             headers: {
                 "User-Agent": "RalphMusic",
                 Accept: "*/*",

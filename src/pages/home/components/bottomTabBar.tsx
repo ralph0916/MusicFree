@@ -5,7 +5,7 @@ import useColors from "@/hooks/useColors";
 import ThemeText from "@/components/base/themeText";
 import Icon, { IIconName } from "@/components/base/icon.tsx";
 
-export type HomeTabKey = "home" | "sheet" | "mine";
+export type HomeTabKey = "home" | "sheet" | "tag" | "mine";
 
 const TABS: Array<{
     key: HomeTabKey;
@@ -14,6 +14,7 @@ const TABS: Array<{
 }> = [
     { key: "home", label: "首页", icon: "home-outline" },
     { key: "sheet", label: "歌单", icon: "playlist" },
+    { key: "tag", label: "标签", icon: "pencil-square" },
     { key: "mine", label: "我的", icon: "user" },
 ];
 

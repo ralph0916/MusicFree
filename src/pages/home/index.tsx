@@ -18,6 +18,7 @@ import PluginSwitcher, {
 import SongFeed from "./components/songFeed";
 import SheetFeed from "./components/sheetFeed";
 import MineTab from "./components/mineTab";
+import MusicTagTab from "./components/musicTagTab";
 import { navidromePluginPlatform } from "@/constants/commonConst";
 import { homeTabAtom } from "./store/homeTabAtom";
 
@@ -41,7 +42,7 @@ function Home() {
             <HomeStatusBar />
             <HorizontalSafeAreaView style={globalStyle.flex1}>
                 <View style={styles.body}>
-                    <NavBar />
+                    {tab !== "tag" ? <NavBar /> : null}
                     {showPlugin ? (
                         <PluginSwitcher
                             active={pluginKey}
@@ -60,10 +61,11 @@ function Home() {
                             pluginKey={pluginKey}
                         />
                     ) : null}
+                    {tab === "tag" ? <MusicTagTab /> : null}
                     {tab === "mine" ? <MineTab /> : null}
                 </View>
             </HorizontalSafeAreaView>
-            <HomePlayerBar />
+            {tab !== "tag" ? <HomePlayerBar /> : null}
             <BottomTabBar active={tab} onChange={onTabChange} />
         </SafeAreaView>
     );

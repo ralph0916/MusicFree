@@ -24,11 +24,13 @@ import {
 import Toast from "@/utils/toast";
 import Color from "color";
 import Theme from "@/core/theme";
+import { useSetAtom } from "jotai";
+import { homeTabAtom } from "../store/homeTabAtom";
 
 function SourceCard(props: {
     title: string;
     subtitle: string;
-    icon: "home-outline" | "user" | "playlist";
+    icon: "home-outline" | "user" | "playlist" | "pencil-square";
     accent: string;
     onPress: () => void;
 }) {
@@ -78,7 +80,8 @@ function QuickEntry(props: {
         | "t-shirt-outline"
         | "clock-outline"
         | "cog-8-tooth"
-        | "musical-note";
+        | "musical-note"
+        | "pencil-square";
     color: string;
     onPress: () => void;
 }) {
@@ -109,6 +112,7 @@ export default function MineTab() {
     const navigate = useNavigate();
     const colors = useColors();
     const theme = Theme.useTheme();
+    const setTab = useSetAtom(homeTabAtom);
     const [, bump] = useState(0);
     const neteaseLoggedIn = isNeteaseLoggedIn();
     const neteaseProfile = getNeteaseAuth()?.profile;
@@ -278,6 +282,13 @@ export default function MineTab() {
                 icon="playlist"
                 accent="#31C27C"
                 onPress={openQq}
+            />
+            <SourceCard
+                title="MusicTag 标签编辑"
+                subtitle="编辑 NAS 音乐封面 / 歌词 / 标题 / 歌手"
+                icon="pencil-square"
+                accent="#F59E0B"
+                onPress={() => setTab("tag")}
             />
 
             <View style={{ height: rpx(40) }} />

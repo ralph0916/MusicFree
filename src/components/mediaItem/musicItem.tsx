@@ -9,10 +9,19 @@ import TitleAndTag from "./titleAndTag";
 import ThemeText from "../base/themeText";
 import TrackPlayer from "@/core/trackPlayer";
 import Icon from "@/components/base/icon.tsx";
+import { ImgAsset } from "@/constants/assetsConst";
+import MiniHeartButton from "@/components/miniHeartButton";
+import {
+    navidromePluginPlatform,
+    neteasePluginPlatform,
+    qqPluginPlatform,
+} from "@/constants/commonConst";
 
 interface IMusicItemProps {
     index?: string | number;
     showMoreIcon?: boolean;
+    showArtwork?: boolean;
+    showHeart?: boolean;
     musicItem: IMusic.IMusicItem;
     musicSheet?: IMusic.IMusicSheetItem;
     onItemPress?: (musicItem: IMusic.IMusicItem) => void;
@@ -20,8 +29,17 @@ interface IMusicItemProps {
     itemPaddingRight?: number;
     left?: () => JSX.Element;
     containerStyle?: StyleProp<ViewStyle>;
-    highlight?: boolean
+    highlight?: boolean;
 }
+
+function canShowHeart(platform: string) {
+    return (
+        platform === navidromePluginPlatform ||
+        platform === neteasePluginPlatform ||
+        platform === qqPluginPlatform
+    );
+}
+
 export default function MusicItem(props: IMusicItemProps) {
     const {
         musicItem,
@@ -31,6 +49,8 @@ export default function MusicItem(props: IMusicItemProps) {
         musicSheet,
         itemPaddingRight,
         showMoreIcon = true,
+        showArtwork = true,
+        showHeart = true,
         left: Left,
         containerStyle,
         highlight = false,
@@ -41,7 +61,7 @@ export default function MusicItem(props: IMusicItemProps) {
             heightType="big"
             style={containerStyle}
             withHorizontalPadding
-            leftPadding={index !== undefined ? 0 : undefined}
+            leftPadding={index !== undefined || showArtwork ? 0 : undefined}
             rightPadding={itemPaddingRight}
             onLongPress={onItemLongPress}
             onPress={() => {
@@ -52,9 +72,15 @@ export default function MusicItem(props: IMusicItemProps) {
                 }
             }}>
             {Left ? <Left /> : null}
+            {showArtwork ? (
+                <ListItem.ListItemImage
+                    uri={musicItem.artwork}
+                    fallbackImg={ImgAsset.albumDefault}
+                />
+            ) : null}
             {index !== undefined ? (
                 <ListItem.ListItemText
-                    width={rpx(82)}
+                    width={rpx(64)}
                     position="none"
                     fixedWidth
                     fontColor={highlight ? "primary" : "text"}
@@ -66,7 +92,7 @@ export default function MusicItem(props: IMusicItemProps) {
                 title={
                     <TitleAndTag
                         title={musicItem.title}
-                        titleFontColor={highlight ? "primary": "text"}
+                        titleFontColor={highlight ? "primary" : "text"}
                         tag={musicItem.platform}
                     />
                 }
@@ -90,6 +116,15 @@ export default function MusicItem(props: IMusicItemProps) {
                     </View>
                 }
             />
+            {showHeart && canShowHeart(musicItem.platform) ? (
+                <View style={styles.heartWrap}>
+                    <MiniHeartButton
+                        musicItem={musicItem}
+                        size={rpx(36)}
+                        color="#999"
+                    />
+                </View>
+            ) : null}
             {showMoreIcon ? (
                 <ListItem.ListItemIcon
                     width={rpx(48)}
@@ -115,10 +150,14 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         marginTop: rpx(16),
     },
-
     indexText: {
         fontStyle: "italic",
         textAlign: "center",
         padding: rpx(2),
+    },
+    heartWrap: {
+        width: rpx(56),
+        alignItems: "center",
+        justifyContent: "center",
     },
 });

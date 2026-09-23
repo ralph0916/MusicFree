@@ -38,6 +38,8 @@ interface IPersistStatus {
     "lyric.showTranslation": boolean;
     /** 歌词-详情页字体大小 */
     "lyric.detailFontSize": number;
+    /** MusicTag Web 服务地址 */
+    "musicTag.url": string;
 }
 
 function set<K extends keyof IPersistStatus>(

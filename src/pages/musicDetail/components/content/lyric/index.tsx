@@ -7,7 +7,11 @@ import { fontSizeConst } from "@/constants/uiConst";
 import Loading from "@/components/base/loading";
 import globalStyle from "@/constants/globalStyle";
 import { showPanel } from "@/components/panels/usePanel";
-import TrackPlayer, { useCurrentMusic, useMusicState } from "@/core/trackPlayer";
+import TrackPlayer, {
+    useCurrentMusic,
+    useMusicState,
+    useProgress,
+} from "@/core/trackPlayer";
 import { musicIsPaused } from "@/utils/trackUtils";
 import delay from "@/utils/delay";
 import DraggingTime from "./draggingTime";
@@ -67,6 +71,7 @@ export default function Lyric(props: IProps) {
 
     const currentMusicItem = useCurrentMusic();
     const associateMusicItem = getMediaExtraProperty(currentMusicItem, "associatedLrc");
+    const progress = useProgress(200);
 
     // 是否展示拖拽
     const dragShownRef = useRef(false);
@@ -295,11 +300,33 @@ export default function Lyric(props: IProps) {
                             data={lyrics}
                             initialNumToRender={30}
                             overScrollMode="never"
-                            extraData={currentLrcItem}
+                            extraData={{
+                                current: currentLrcItem,
+                                pos: progress.position,
+                            }}
                             renderItem={({ item, index }) => {
                                 let text = item.lrc;
                                 if (showTranslation && hasTranslation) {
                                     text += `\n${item?.translation ?? ""}`;
+                                }
+                                const isCurrent =
+                                    currentLrcItem?.index === index;
+                                let lineProgress = 0;
+                                if (isCurrent) {
+                                    const start =
+                                        item.time + +(meta?.offset ?? 0);
+                                    const next = lyrics[index + 1];
+                                    const end = next
+                                        ? next.time + +(meta?.offset ?? 0)
+                                        : start + 5;
+                                    const span = Math.max(0.01, end - start);
+                                    lineProgress = Math.min(
+                                        1,
+                                        Math.max(
+                                            0,
+                                            (progress.position - start) / span,
+                                        ),
+                                    );
                                 }
 
                                 return (
@@ -309,9 +336,8 @@ export default function Lyric(props: IProps) {
                                         fontSize={fontSizeStyle.fontSize}
                                         onLayout={handleLyricItemLayout}
                                         light={draggingIndex === index}
-                                        highlight={
-                                            currentLrcItem?.index === index
-                                        }
+                                        highlight={isCurrent}
+                                        progress={lineProgress}
                                     />
                                 );
                             }}

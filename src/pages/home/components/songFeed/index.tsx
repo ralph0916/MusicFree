@@ -29,6 +29,7 @@ import {
     likeNeteaseSong,
 } from "@/core/pluginManager/neteasePlugin";
 import { getQqUserPlaylists } from "@/core/pluginManager/qqPlugin";
+import { setLikeState } from "@/core/likeManager";
 
 export type SongSortField =
     | "title"
@@ -427,12 +428,19 @@ export default function SongFeed(props: IProps) {
                                         ],
                                         async onPress(opt) {
                                             try {
+                                                const liked =
+                                                    opt.value === "like";
                                                 await likeNeteaseSong(
                                                     String(item.id),
-                                                    opt.value === "like",
+                                                    liked,
+                                                );
+                                                setLikeState(
+                                                    item.platform,
+                                                    item.id,
+                                                    liked,
                                                 );
                                                 Toast.success(
-                                                    opt.value === "like"
+                                                    liked
                                                         ? "已添加到我喜欢"
                                                         : "已取消喜欢",
                                                 );
