@@ -1,12 +1,14 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, session, shell } from "electron";
 import { IWindowManager } from "@/types/main/window-manager";
 import fs from "fs/promises";
+import path from "path";
 import { appUpdateSources } from "@/common/constant";
 import axios from "axios";
 import { compare } from "compare-versions";
 
 class Utils {
     private windowManager: IWindowManager;
+    private flacPendingName = "";
 
     public setup(windowManager: IWindowManager) {
         this.windowManager = windowManager;
@@ -15,6 +17,7 @@ class Utils {
         this.setupWindowUtil();
         this.setupShellUtil();
         this.setupDialogUtil();
+        this.setupFlacDownload();
     }
 
 
@@ -59,6 +62,82 @@ class Utils {
                 return mainWindow.webContents.session.getCacheSize?.();
             }
             return NaN;
+        });
+
+        // 主进程发请求，才能读到 Set-Cookie（渲染进程会被浏览器屏蔽）
+        ipcMain.handle("@shared/utils/http-request", async (_, options: {
+            url: string;
+            method?: string;
+            headers?: Record<string, string>;
+            params?: Record<string, any>;
+            data?: any;
+            responseType?: "json" | "text" | "arraybuffer";
+            timeout?: number;
+            maxRedirects?: number;
+        }) => {
+            const responseType = options.responseType || "json";
+            const collectedCookies: string[] = [];
+            const response = await axios({
+                url: options.url,
+                method: (options.method || "GET") as any,
+                headers: {
+                    ...(options.headers || {}),
+                },
+                params: options.params,
+                data: options.data,
+                responseType: responseType === "arraybuffer" ? "arraybuffer" : undefined,
+                timeout: options.timeout ?? 20000,
+                validateStatus: () => true,
+                maxRedirects: options.maxRedirects ?? 5,
+                beforeRedirect: (redirectOptions, responseDetails) => {
+                    const h: any = responseDetails?.headers || {};
+                    const raw = h["set-cookie"] || h["Set-Cookie"];
+                    if (raw) {
+                        (Array.isArray(raw) ? raw : [raw]).forEach((item: string) => {
+                            const part = String(item).split(";")[0].trim();
+                            if (part) {
+                                collectedCookies.push(part);
+                            }
+                        });
+                    }
+                },
+            });
+            const headers: any = response.headers || {};
+            let setCookie: string[] = [...collectedCookies];
+            if (typeof headers.getSetCookie === "function") {
+                setCookie = setCookie.concat(headers.getSetCookie() || []);
+            } else {
+                const raw =
+                    headers["set-cookie"] ||
+                    headers["Set-Cookie"] ||
+                    headers["SET-COOKIE"];
+                if (raw) {
+                    setCookie = setCookie.concat(Array.isArray(raw) ? raw : [raw]);
+                }
+            }
+            setCookie = setCookie
+                .map((item: string) => String(item).split(";")[0].trim())
+                .filter(Boolean);
+            // 去重（保留后者）
+            const cookieMap = new Map<string, string>();
+            setCookie.forEach((item) => {
+                const idx = item.indexOf("=");
+                if (idx > 0) {
+                    cookieMap.set(item.slice(0, idx), item.slice(idx + 1));
+                }
+            });
+            setCookie = Array.from(cookieMap.entries()).map(
+                ([k, v]) => `${k}=${v}`,
+            );
+            let data: any = response.data;
+            if (responseType === "arraybuffer") {
+                data = Buffer.from(response.data).toString("base64");
+            }
+            return {
+                status: response.status,
+                data,
+                setCookie,
+            };
         });
     }
 
@@ -169,7 +248,63 @@ class Utils {
         });
     }
 
-}
+    private setupFlacDownload() {
+        ipcMain.on("@shared/utils/flac-set-download-name", (_, name: string) => {
+            this.flacPendingName = String(name || "").trim();
+        });
 
+        const sanitize = (name: string) =>
+            name
+                .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, 120);
+
+        try {
+            const flacSession = session.fromPartition("persist:flac-download");
+            flacSession.setPermissionRequestHandler((_wc, _permission, callback) => {
+                callback(true);
+            });
+            flacSession.on("will-download", (_event, item) => {
+                const original = item.getFilename() || "download.flac";
+                const ext = path.extname(original) || ".flac";
+                const base = sanitize(
+                    (this.flacPendingName || original.replace(ext, "")).replace(
+                        /\.[a-z0-9]{2,5}$/i,
+                        "",
+                    ),
+                );
+                const finalName = `${base || "download"}${ext}`;
+                const savePath = path.join(app.getPath("downloads"), finalName);
+                item.setSavePath(savePath);
+                this.flacPendingName = "";
+
+                // 关闭可能残留的空白子窗口
+                const closeBlank = () => {
+                    BrowserWindow.getAllWindows().forEach((win) => {
+                        try {
+                            if (win === this.windowManager.mainWindow) {
+                                return;
+                            }
+                            const url = win.webContents.getURL();
+                            if (!url || url === "about:blank") {
+                                win.close();
+                            }
+                        } catch {
+                            // ignore
+                        }
+                    });
+                };
+                closeBlank();
+                item.once("done", () => {
+                    closeBlank();
+                });
+            });
+        } catch {
+            // ignore
+        }
+    }
+
+}
 
 export default new Utils();

@@ -16,6 +16,16 @@ interface IMod {
         checkUpdate: () => Promise<ICommon.IUpdateInfo>;
         clearCache: () => void;
         getCacheSize: () => Promise<number>;
+        httpRequest: (options: {
+            url: string;
+            method?: string;
+            headers?: Record<string, string>;
+            params?: Record<string, any>;
+            data?: any;
+            responseType?: "json" | "text" | "arraybuffer";
+            timeout?: number;
+        }) => Promise<{ status: number; data: any; setCookie: string[] }>;
+        flacSetDownloadName: (name: string) => void;
     }
     appWindow: {
         minMainWindow: (skipTaskBar?: boolean) => void;

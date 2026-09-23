@@ -126,7 +126,7 @@ class WindowManager implements IWindowManager {
 
         // 2. 加载主界面
         const initUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);
-        initUrl.hash = `/main/musicsheet/${localPluginName}/favorite`;
+        initUrl.hash = `/main/recommend-sheets`;
         mainWindow.loadURL(initUrl.toString()).then(voidCallback);
 
         // 3. 开发者工具

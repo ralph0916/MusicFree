@@ -38,6 +38,23 @@ class AudioController extends ControllerBase implements IAudioController {
         return !!this.audio.src;
     }
 
+    /** 优先播放器时长；流媒体未就绪（Infinity/NaN）时回退到曲目元数据 */
+    private resolveDuration() {
+        const mediaDuration = this.audio.duration;
+        if (isFinite(mediaDuration) && mediaDuration > 0) {
+            return mediaDuration;
+        }
+        const meta = Number(this.musicItem?.duration) || 0;
+        return meta > 0 ? meta : 0;
+    }
+
+    private readProgress() {
+        return {
+            currentTime: this.audio.currentTime || 0,
+            duration: this.resolveDuration(),
+        };
+    }
+
     constructor() {
         super();
         this.audio = new Audio();
@@ -62,10 +79,15 @@ class AudioController extends ControllerBase implements IAudioController {
         };
 
         this.audio.ontimeupdate = () => {
-            this.onProgressUpdate?.({
-                currentTime: this.audio.currentTime,
-                duration: this.audio.duration, // 缓冲中是Infinity
-            });
+            this.onProgressUpdate?.(this.readProgress());
+        };
+
+        this.audio.ondurationchange = () => {
+            this.onProgressUpdate?.(this.readProgress());
+        };
+
+        this.audio.onloadedmetadata = () => {
+            this.onProgressUpdate?.(this.readProgress());
         };
 
         // this.audio.onseeking = () => {
@@ -140,11 +162,10 @@ class AudioController extends ControllerBase implements IAudioController {
 
     seekTo(seconds: number): void {
         if (this.hasSource && isFinite(seconds)) {
-            const duration = this.audio.duration;
-            this.audio.currentTime = Math.min(
-                seconds,
-                isNaN(duration) ? Infinity : duration,
-            );
+            const duration = this.resolveDuration();
+            const max =
+                duration > 0 ? Math.max(0, duration - 0.25) : seconds;
+            this.audio.currentTime = Math.max(0, Math.min(seconds, max));
         }
     }
 

@@ -4,7 +4,7 @@ import { PlayerState, RepeatMode } from "@/common/constant";
 
 const initProgress = {
     currentTime: 0,
-    duration: Infinity,
+    duration: 0,
 };
 
 

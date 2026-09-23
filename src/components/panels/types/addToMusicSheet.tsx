@@ -21,16 +21,19 @@ import {
     addSongsToNavidromePlaylist,
     getNavidromePlaylistIdsContainingSongs,
     getNavidromePlaylists,
+    removeSongsFromNavidromePlaylist,
 } from "@/core/pluginManager/navidromePlugin";
 import {
     addSongsToNeteasePlaylist,
     getNeteasePlaylistIdsContainingSongs,
     getNeteaseUserPlaylists,
+    removeSongsFromNeteasePlaylist,
 } from "@/core/pluginManager/neteasePlugin";
 import {
     addSongsToQqPlaylist,
     getQqPlaylistIdsContainingSongs,
     getQqUserPlaylists,
+    removeSongsFromQqPlaylist,
 } from "@/core/pluginManager/qqPlugin";
 import { isNeteaseLoggedIn } from "@/core/pluginManager/neteaseAuth";
 import { isQqLoggedIn } from "@/core/pluginManager/qqAuth";
@@ -132,9 +135,9 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
         if (submitting) {
             return;
         }
-        // 只把新勾选的歌单加入（已在歌单中的保持勾选即可，避免重复请求）
         const toAdd = [...selected].filter(id => !initialSelected.has(id));
-        if (toAdd.length === 0) {
+        const toRemove = [...initialSelected].filter(id => !selected.has(id));
+        if (toAdd.length === 0 && toRemove.length === 0) {
             hidePanel();
             return;
         }
@@ -142,22 +145,38 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
         try {
             const songIds = items.map(i => String(i.id));
             if (platform === navidromePluginPlatform) {
+                for (const playlistId of toRemove) {
+                    await removeSongsFromNavidromePlaylist(playlistId, songIds);
+                }
                 for (const playlistId of toAdd) {
                     await addSongsToNavidromePlaylist(playlistId, songIds);
                 }
             } else if (platform === neteasePluginPlatform) {
+                for (const playlistId of toRemove) {
+                    await removeSongsFromNeteasePlaylist(playlistId, songIds);
+                }
                 for (const playlistId of toAdd) {
                     await addSongsToNeteasePlaylist(playlistId, songIds);
                 }
             } else if (platform === qqPluginPlatform) {
+                for (const playlistId of toRemove) {
+                    await removeSongsFromQqPlaylist(playlistId, songIds);
+                }
                 for (const playlistId of toAdd) {
                     await addSongsToQqPlaylist(playlistId, songIds);
                 }
             }
-            Toast.success(`已加入 ${toAdd.length} 个歌单`);
+            const parts: string[] = [];
+            if (toAdd.length) {
+                parts.push(`加入 ${toAdd.length} 个`);
+            }
+            if (toRemove.length) {
+                parts.push(`移出 ${toRemove.length} 个`);
+            }
+            Toast.success(`已${parts.join("，")}歌单`);
             hidePanel();
         } catch (e: any) {
-            Toast.warn(e?.message || "加入歌单失败");
+            Toast.warn(e?.message || "操作失败");
         } finally {
             setSubmitting(false);
         }
@@ -189,7 +208,7 @@ export default function AddToMusicSheet(props: IAddToMusicSheetProps) {
                             fontSize="description"
                             fontColor="textSecondary"
                             style={style.hint}>
-                            已在歌单中的会自动勾选；可多选或全部取消
+                            已在歌单中的会自动勾选；取消勾选并确定后将从该歌单移除
                         </ThemeText>
                         {error ? (
                             <ThemeText

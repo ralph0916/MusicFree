@@ -109,26 +109,42 @@ function mapSong(song) {
 
 function mapSheet(playlist) {
   const id = String(
-    playlist.dissid || playlist.tid || playlist.id || "",
+    playlist.dissid ||
+      playlist.diss_id ||
+      playlist.tid ||
+      playlist.dirId ||
+      playlist.dirid ||
+      playlist.dir_id ||
+      playlist.id ||
+      "",
   );
   const cover =
     playlist.logo ||
     playlist.picurl ||
     playlist.cover ||
     playlist.imgurl ||
+    playlist.pic_url ||
     "";
+  const title =
+    playlist.dissname ||
+    playlist.diss_name ||
+    playlist.dirName ||
+    playlist.dirname ||
+    playlist.dir_name ||
+    playlist.title ||
+    playlist.name ||
+    (id ? "歌单 " + id : "未命名歌单");
   return {
     id: id,
     platform: PLATFORM,
-    title:
-      playlist.dissname || playlist.title || playlist.name || "未命名歌单",
+    title: title,
     artist:
       playlist.nickname ||
       (playlist.creator && playlist.creator.name) ||
       PLATFORM,
     artwork: cover,
     coverImg: cover,
-    worksNum: playlist.songnum || playlist.song_cnt,
+    worksNum: playlist.songnum || playlist.song_cnt || playlist.songNum,
     description: playlist.introduction || playlist.desc || "",
   };
 }
@@ -164,32 +180,126 @@ async function searchSongs(keyword, page) {
 async function getUserPlaylists() {
   const uin = getUin();
   if (!getCookie() || uin === "0") {
-    throw new Error("请先在插件设置中填写含 uin / qm_keyst 的 Cookie");
+    throw new Error("请先登录 QQ 音乐账号");
   }
-  const data = await qqMusicu({
-    req_0: {
-      module: "music.playlist.PlaylistPortal",
-      method: "GetProfileFeed",
-      param: {
-        hostuin: Number(uin),
-        page: 0,
+
+  // 方案 1：GetPlaylistByUin（较新）
+  try {
+    const data = await qqMusicu({
+      req_0: {
+        module: "music.musicasset.PlaylistBaseRead",
+        method: "GetPlaylistByUin",
+        param: { uin: String(uin) },
       },
-    },
-  });
-  const list =
-    (data &&
-      data.req_0 &&
-      data.req_0.data &&
-      data.req_0.data.vdiss &&
-      data.req_0.data.vdiss.list) ||
-    (data && data.req_0 && data.req_0.data && data.req_0.data.playlist) ||
-    [];
-  return list.map(mapSheet);
+    });
+    const raw =
+      (data &&
+        data.req_0 &&
+        data.req_0.data &&
+        data.req_0.data.v_playlist) ||
+      (data && data.req_0 && data.req_0.data && data.req_0.data.playlist) ||
+      (data && data.req_0 && data.req_0.data && data.req_0.data.list) ||
+      [];
+    if (raw && raw.length) {
+      return raw.map(mapSheet).filter(function (s) {
+        return !!s.id;
+      });
+    }
+  } catch (e) {}
+
+  // 方案 2：个人主页歌单
+  try {
+    const data = await qqMusicu({
+      req_0: {
+        module: "music.playlist.PlaylistPortal",
+        method: "GetProfileFeed",
+        param: {
+          hostuin: Number(uin),
+          page: 0,
+        },
+      },
+    });
+    const raw =
+      (data &&
+        data.req_0 &&
+        data.req_0.data &&
+        data.req_0.data.vdiss &&
+        data.req_0.data.vdiss.list) ||
+      (data && data.req_0 && data.req_0.data && data.req_0.data.playlist) ||
+      (data &&
+        data.req_0 &&
+        data.req_0.data &&
+        data.req_0.data.v_playlist) ||
+      [];
+    if (raw && raw.length) {
+      return raw.map(mapSheet).filter(function (s) {
+        return !!s.id;
+      });
+    }
+  } catch (e) {}
+
+  // 方案 3：创建的歌单列表
+  try {
+    const data = await qqGet(
+      "https://c.y.qq.com/rsc/fcgi-bin/fcg_user_created_diss",
+      {
+        hostUin: 0,
+        hostuin: uin,
+        sin: 0,
+        size: 50,
+        format: "json",
+        inCharset: "utf8",
+        outCharset: "utf-8",
+        notice: 0,
+        platform: "yqq.json",
+        needNewCode: 0,
+      },
+    );
+    const list =
+      (data && data.data && data.data.disslist) ||
+      (data && data.data && data.data.list) ||
+      [];
+    if (list && list.length) {
+      return list.map(mapSheet).filter(function (s) {
+        return !!s.id;
+      });
+    }
+  } catch (e) {}
+
+  // 方案 4：个人主页
+  try {
+    const data = await qqGet(
+      "https://c.y.qq.com/rsc/fcgi-bin/fcg_get_profile_homepage.fcg",
+      {
+        cid: 205360838,
+        userid: uin,
+        reqfrom: 1,
+        reqtype: 0,
+        format: "json",
+      },
+    );
+    const mine =
+      (data && data.data && data.data.creator && data.data.creator.diss) ||
+      (data && data.data && data.data.mymusic) ||
+      (data &&
+        data.data &&
+        data.data.mydiss &&
+        data.data.mydiss.list) ||
+      [];
+    const list = Array.isArray(mine) ? mine : (mine && mine.list) || [];
+    if (list && list.length) {
+      return list.map(mapSheet).filter(function (s) {
+        return !!s.id;
+      });
+    }
+  } catch (e) {}
+
+  return [];
 }
 
 module.exports = {
   platform: PLATFORM,
-  version: "1.0.0",
+  version: "1.1.1",
   appVersion: ">0.6.0",
   description:
     "QQ 音乐：支持密码、Cookie、扫码登录；支持搜索、播放、歌词、榜单与歌单（不支持破解 VIP）。",

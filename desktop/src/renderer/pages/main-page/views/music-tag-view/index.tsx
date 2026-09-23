@@ -99,6 +99,7 @@ export default function MusicTagView() {
                 className="music-tag-webview"
                 src={url}
                 allowpopups={"false" as any}
+                partition="persist:music-tag"
             />
         </div>
     );

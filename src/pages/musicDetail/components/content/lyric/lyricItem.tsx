@@ -106,7 +106,7 @@ const LyricItemComponent = memo(
         prev.text === curr.text &&
         prev.index === curr.index &&
         prev.fontSize === curr.fontSize &&
-        Math.abs((prev.progress || 0) - (curr.progress || 0)) < 0.015,
+        Math.abs((prev.progress || 0) - (curr.progress || 0)) < 0.008,
 );
 
 export default LyricItemComponent;

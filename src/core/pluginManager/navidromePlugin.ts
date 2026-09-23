@@ -294,6 +294,26 @@ export async function addSongsToNavidromePlaylist(
     }
 }
 
+export async function removeSongsFromNavidromePlaylist(
+    playlistId: string,
+    songIds: string[],
+) {
+    const target = new Set(songIds.map(String));
+    if (!target.size) {
+        return;
+    }
+    const { data } = await request("getPlaylist", { id: playlistId });
+    const entries: any[] = data.playlist?.entry ?? [];
+    for (let i = entries.length - 1; i >= 0; i--) {
+        if (target.has(String(entries[i]?.id))) {
+            await request("updatePlaylist", {
+                playlistId,
+                songIndexToRemove: i,
+            });
+        }
+    }
+}
+
 export async function toggleSongInNavidromePlaylist(
     playlistName: string,
     songId: string,
@@ -599,75 +619,18 @@ const navidromePluginDefine: IPlugin.IPluginDefine = {
     async getRecommendSheetTags() {
         return {
             pinned: [
-                { id: "recent", title: "最近添加", platform: navidromePluginPlatform },
-                { id: "random", title: "随机专辑", platform: navidromePluginPlatform },
-                { id: "starred", title: "我的收藏", platform: navidromePluginPlatform },
-                { id: "playlists", title: "全部歌单", platform: navidromePluginPlatform },
+                { id: "喜欢", title: "喜欢", platform: navidromePluginPlatform },
+                { id: "全部", title: "全部", platform: navidromePluginPlatform },
+                { id: "收藏", title: "收藏", platform: navidromePluginPlatform },
+                { id: "车载", title: "车载", platform: navidromePluginPlatform },
+                { id: "听腻了", title: "听腻了", platform: navidromePluginPlatform },
             ],
-            data: [
-                {
-                    title: "浏览",
-                    data: [
-                        { id: "frequent", title: "常听专辑" },
-                        { id: "newest", title: "最新专辑" },
-                        { id: "alphabeticalByName", title: "专辑名排序" },
-                        { id: "alphabeticalByArtist", title: "歌手排序" },
-                    ],
-                },
-            ],
+            data: [],
         };
     },
 
-    async getRecommendSheetsByTag(tag, page = 1) {
-        const tagId = tag?.id || "recent";
-
-        if (tagId === "playlists" || tagId === "starred") {
-            if (tagId === "starred") {
-                const { data, auth, baseUrl } = await request("getStarred2");
-                const albums = data.starred2?.album ?? [];
-                const start = paginateOffset(page);
-                const slice = albums.slice(start, start + PAGE_SIZE);
-                return {
-                    isEnd: start + slice.length >= albums.length,
-                    data: slice.map((item: any) =>
-                        mapAlbumAsSheet(item, baseUrl, auth),
-                    ),
-                };
-            }
-
-            const { data, auth, baseUrl } = await request("getPlaylists");
-            const playlists = data.playlists?.playlist ?? [];
-            const start = paginateOffset(page);
-            const slice = playlists.slice(start, start + PAGE_SIZE);
-            return {
-                isEnd: start + slice.length >= playlists.length,
-                data: slice.map((item: any) =>
-                    mapPlaylist(item, baseUrl, auth),
-                ),
-            };
-        }
-
-        const typeMap: Record<string, string> = {
-            recent: "recent",
-            random: "random",
-            frequent: "frequent",
-            newest: "newest",
-            alphabeticalByName: "alphabeticalByName",
-            alphabeticalByArtist: "alphabeticalByArtist",
-        };
-        const listType = typeMap[tagId] || "recent";
-        const { data, auth, baseUrl } = await request("getAlbumList2", {
-            type: listType,
-            size: PAGE_SIZE,
-            offset: paginateOffset(page),
-        });
-        const albums = data.albumList2?.album ?? [];
-        return {
-            isEnd: albums.length < PAGE_SIZE,
-            data: albums.map((item: any) =>
-                mapAlbumAsSheet(item, baseUrl, auth),
-            ),
-        };
+    async getRecommendSheetsByTag() {
+        return { isEnd: true, data: [] };
     },
 
     async getTopLists() {

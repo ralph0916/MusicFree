@@ -109,10 +109,15 @@ export default function MusicInfo() {
 }
 
 function Progress() {
-    const { currentTime, duration } = useProgress();
+    const { currentTime, duration: progressDuration } = useProgress();
+    const currentMusic = useCurrentMusic();
+    const duration =
+        isFinite(progressDuration) && progressDuration > 0
+            ? progressDuration
+            : Number(currentMusic?.duration) || 0;
     return (
         <div className="progress">
-            {isFinite(duration)
+            {duration > 0
                 ? `${secondsToDuration(currentTime)}/${secondsToDuration(duration)}`
                 : null}
         </div>

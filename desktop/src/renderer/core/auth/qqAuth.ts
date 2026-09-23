@@ -3,6 +3,7 @@ import CryptoJS from "crypto-js";
 import bigInt from "big-integer";
 import { qqTeaEncrypt } from "./qqTea";
 import { clearPluginCookie, syncPluginCookie } from "./syncPluginCookie";
+import { appUtil } from "@shared/utils/renderer";
 
 const STORAGE_KEY = "ralphmusic.qq.auth";
 export const QQ_PLATFORM = "QQ音乐";
@@ -47,7 +48,11 @@ export function getQqAuth(): QqAuthState | null {
 
 export function isQqLoggedIn() {
     const auth = getQqAuth();
-    return Boolean(auth?.cookie && auth?.uin);
+    if (!auth?.cookie) {
+        return false;
+    }
+    const uin = normalizeUin(auth.uin) || extractUin(auth.cookie);
+    return Boolean(uin);
 }
 
 export function logoutQq() {
@@ -55,10 +60,34 @@ export function logoutQq() {
 }
 
 function extractUin(cookie: string) {
-    const match =
-        cookie.match(/(?:^|;\s*)(?:uin|wxuin)=o?0*(\d+)/i) ||
-        cookie.match(/(?:^|;\s*)uin=o?0*(\d+)/i);
-    return match?.[1] || "";
+    if (!cookie) {
+        return "";
+    }
+    const patterns = [
+        /(?:^|;\s*)uin=o?0*(\d{5,12})(?=;|$)/i,
+        /(?:^|;\s*)wxuin=o?0*(\d{5,12})(?=;|$)/i,
+        /(?:^|;\s*)p_uin=o?0*(\d{5,12})(?=;|$)/i,
+        /(?:^|;\s*)(?:uin|wxuin)=o?0*(\d+)(?=;|$)/i,
+    ];
+    for (const re of patterns) {
+        const match = cookie.match(re);
+        const uin = match?.[1] || "";
+        if (uin && uin !== "0") {
+            return uin.replace(/^0+/, "") || uin;
+        }
+    }
+    return "";
+}
+
+function normalizeUin(raw: string) {
+    const uin = String(raw || "")
+        .trim()
+        .replace(/^o+/i, "")
+        .replace(/^0+/, "");
+    if (!uin || uin === "0" || !/^\d{5,12}$/.test(uin)) {
+        return "";
+    }
+    return uin;
 }
 
 function mergeCookie(oldCookie: string, setCookie: string | string[] | undefined) {
@@ -481,7 +510,9 @@ export type QqQrSession = {
 
 /** 获取 QQ 扫码二维码 */
 export async function createQqQrSession(): Promise<QqQrSession> {
-    const response = await axios.get("https://ssl.ptlogin2.qq.com/ptqrshow", {
+    const result = await appUtil.httpRequest({
+        url: "https://ssl.ptlogin2.qq.com/ptqrshow",
+        method: "GET",
         params: {
             appid: APPID,
             e: 2,
@@ -500,19 +531,13 @@ export async function createQqQrSession(): Promise<QqQrSession> {
         },
         responseType: "arraybuffer",
         timeout: 15000,
-        validateStatus: () => true,
     });
-    const cookie = mergeCookie("", parseSetCookie(response.headers));
+    const cookie = mergeCookie("", result.setCookie);
     const qrsig = cookie.match(/qrsig=([^;]+)/)?.[1] || "";
     if (!qrsig) {
         throw new Error("获取二维码失败，请重试");
     }
-    const bytes = new Uint8Array(response.data);
-    let binary = "";
-    bytes.forEach((b) => {
-        binary += String.fromCharCode(b);
-    });
-    const imageUrl = `data:image/png;base64,${btoa(binary)}`;
+    const imageUrl = `data:image/png;base64,${result.data}`;
     return {
         cookie,
         qrsig,
@@ -530,7 +555,9 @@ export async function checkQqQrStatus(
     session: QqQrSession,
 ): Promise<{ status: QqQrStatus; session: QqQrSession }> {
     let cookie = session.cookie;
-    const response = await axios.get("https://ssl.ptlogin2.qq.com/ptqrlogin", {
+    const result = await appUtil.httpRequest({
+        url: "https://ssl.ptlogin2.qq.com/ptqrlogin",
+        method: "GET",
         params: {
             u1: U1,
             ptqrtoken: session.ptqrtoken,
@@ -555,10 +582,9 @@ export async function checkQqQrStatus(
             Referer: "https://xui.ptlogin2.qq.com/",
         },
         timeout: 15000,
-        validateStatus: () => true,
     });
-    cookie = mergeCookie(cookie, parseSetCookie(response.headers));
-    const parts = parseQuoted(String(response.data || ""));
+    cookie = mergeCookie(cookie, result.setCookie);
+    const parts = parseQuoted(String(result.data || ""));
     const code = parts[0];
     const nextSession = { ...session, cookie };
 
@@ -579,24 +605,41 @@ export async function checkQqQrStatus(
         const nicknameFromLogin = parts[5] || "";
         if (jumpUrl) {
             try {
-                const jump = await axios.get(jumpUrl, {
+                const jump = await appUtil.httpRequest({
+                    url: jumpUrl,
+                    method: "GET",
                     headers: {
                         Cookie: cookie,
                         "User-Agent":
                             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
                     },
                     timeout: 15000,
-                    maxRedirects: 5,
-                    validateStatus: () => true,
                 });
-                cookie = mergeCookie(cookie, parseSetCookie(jump.headers));
+                cookie = mergeCookie(cookie, jump.setCookie);
             } catch {
                 // ignore
             }
         }
-        let uin = extractUin(cookie);
-        if (!uin) {
-            uin = parts[1]?.replace(/^o0*/, "") || "";
+        let uin =
+            normalizeUin(extractUin(cookie)) ||
+            normalizeUin(parts[1] || "") ||
+            normalizeUin(parts[4] || "") ||
+            normalizeUin(parts[5] || "");
+        // 部分扫码回跳 URL 带 uin=
+        if (!uin && jumpUrl) {
+            try {
+                const u = new URL(jumpUrl);
+                uin =
+                    normalizeUin(u.searchParams.get("uin") || "") ||
+                    normalizeUin(u.searchParams.get("uin") || "") ||
+                    normalizeUin(
+                        decodeURIComponent(jumpUrl).match(
+                            /uin=o?0*(\d{5,12})/i,
+                        )?.[1] || "",
+                    );
+            } catch {
+                // ignore
+            }
         }
         if (!uin) {
             throw new Error("扫码成功但未获取到 QQ 号");
@@ -631,5 +674,21 @@ export function getQqHeaders() {
 }
 
 export function getQqUin() {
-    return getQqAuth()?.uin || "0";
+    const auth = getQqAuth();
+    if (!auth) {
+        return "0";
+    }
+    let uin =
+        normalizeUin(auth.uin) ||
+        normalizeUin(auth.profile?.uin || "") ||
+        extractUin(auth.cookie);
+    if (uin && uin !== auth.uin) {
+        // 修复历史错误存储的 uin=0
+        setQqAuth({
+            ...auth,
+            uin,
+            profile: { ...(auth.profile || {}), uin },
+        });
+    }
+    return uin || "0";
 }

@@ -1,0 +1,66 @@
+.song-sort-bar {
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
+
+  .song-sort-bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .song-sort-trigger,
+  .song-sort-order {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: none;
+    background: color-mix(in srgb, var(--textColor) 6%, transparent);
+    color: var(--textColor);
+    cursor: pointer;
+    font-size: 0.85rem;
+    opacity: 0.85;
+
+    &:hover {
+      background: color-mix(in srgb, var(--primaryColor) 12%, transparent);
+      color: var(--primaryColor);
+      opacity: 1;
+    }
+  }
+
+  .song-sort-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 20;
+    min-width: 120px;
+    padding: 6px;
+    border-radius: 10px;
+    background: var(--backgroundColor, #fff);
+    border: 1px solid var(--dividerColor);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    button {
+      border: none;
+      background: transparent;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--textColor);
+      font-size: 0.9rem;
+
+      &:hover,
+      &.active {
+        background: color-mix(in srgb, var(--primaryColor) 12%, transparent);
+        color: var(--primaryColor);
+      }
+    }
+  }
+}

@@ -71,7 +71,7 @@ export default function Lyric(props: IProps) {
 
     const currentMusicItem = useCurrentMusic();
     const associateMusicItem = getMediaExtraProperty(currentMusicItem, "associatedLrc");
-    const progress = useProgress(200);
+    const progress = useProgress(60);
 
     // 是否展示拖拽
     const dragShownRef = useRef(false);

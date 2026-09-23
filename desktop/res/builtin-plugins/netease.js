@@ -173,7 +173,7 @@ async function fetchPlaylistTracks(id, n) {
 
 module.exports = {
   platform: PLATFORM,
-  version: "1.0.0",
+  version: "1.1.0",
   appVersion: ">0.6.0",
   description:
     "网易云音乐：支持手机验证码 / 扫码登录；支持搜索、播放、歌词、榜单与歌单（不支持破解 VIP）。",
@@ -414,17 +414,17 @@ module.exports = {
   async getRecommendSheetsByTag(tag, page) {
     page = page || 1;
     const tagId = (tag && tag.id) || "";
-    if (tagId === "mine") {
+    if (tagId === "mine" || tagId === "") {
       if (page > 1) {
         return { isEnd: true, data: [] };
       }
       if (!getCookie()) {
-        throw new Error("请先在插件设置中填写网易云 Cookie");
+        throw new Error("请先登录网易云账号");
       }
       const profile = await getAccountProfile();
       const uid = profile && profile.userId;
       if (!uid) {
-        throw new Error("无法获取用户信息，请检查 Cookie 是否有效");
+        throw new Error("无法获取用户信息，请检查登录状态");
       }
       const data = await weapiPost(
         "https://music.163.com/weapi/user/playlist",
@@ -440,7 +440,18 @@ module.exports = {
           String(item.creator && item.creator.userId) === String(uid)
         );
       });
-      return { isEnd: true, data: list.map(mapSheet) };
+      const sheets = list.map(mapSheet);
+      // 置顶：每日推荐
+      sheets.unshift({
+        id: "daily",
+        platform: PLATFORM,
+        title: "每日推荐",
+        artist: (profile && profile.nickname) || PLATFORM,
+        artwork: "",
+        coverImg: "",
+        description: "根据口味推荐的单曲",
+      });
+      return { isEnd: true, data: sheets };
     }
     const data = await weapiPost(
       "https://music.163.com/weapi/playlist/list",
@@ -462,6 +473,24 @@ module.exports = {
   async getMusicSheetInfo(sheetItem, page) {
     if (page > 1) {
       return { isEnd: true, musicList: [] };
+    }
+    if (String(sheetItem.id) === "daily") {
+      if (!getCookie()) {
+        throw new Error("请先登录网易云账号");
+      }
+      const data = await weapiPost(
+        "https://music.163.com/weapi/v3/discovery/recommend/songs",
+        { limit: 100, offset: 0 },
+      );
+      const tracks =
+        (data && data.data && data.data.dailySongs) ||
+        (data && data.recommend) ||
+        [];
+      return {
+        isEnd: true,
+        sheetItem: Object.assign({}, sheetItem, { title: "每日推荐" }),
+        musicList: tracks.map(mapSong),
+      };
     }
     const result = await fetchPlaylistTracks(sheetItem.id, 500);
     return {

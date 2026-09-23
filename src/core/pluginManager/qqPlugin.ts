@@ -534,6 +534,34 @@ export async function addSongsToQqPlaylist(
     return true;
 }
 
+export async function removeSongsFromQqPlaylist(
+    playlistId: string,
+    songIds: string[],
+) {
+    if (!isQqLoggedIn()) {
+        throw new Error("请先登录 QQ 音乐账号");
+    }
+    const data = await qqMusicu({
+        req_0: {
+            module: "music.musicasset.PlaylistDetailWrite",
+            method: "DelSongList",
+            param: {
+                dirId: Number(playlistId),
+                v_songInfo: songIds.map(id => ({
+                    songId: Number(id) || 0,
+                    songType: 0,
+                })),
+            },
+        },
+    });
+    if (data?.req_0?.code !== 0 && data?.req_0?.code !== undefined) {
+        if (data?.code && data.code !== 0) {
+            throw new Error(data?.req_0?.msg || data?.msg || "移出歌单失败");
+        }
+    }
+    return true;
+}
+
 export async function deleteQqPlaylist(playlistId: string) {
     if (!isQqLoggedIn()) {
         throw new Error("请先登录 QQ 音乐账号");

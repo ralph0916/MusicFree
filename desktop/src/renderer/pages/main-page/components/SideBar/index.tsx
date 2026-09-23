@@ -1,8 +1,6 @@
 import ListItem from "./widgets/ListItem";
 import "./index.scss";
-import MySheets from "./widgets/MySheets";
 import { useMatch, useNavigate } from "react-router";
-import StarredSheets from "./widgets/StarredSheets";
 import { useTranslation } from "react-i18next";
 
 export default function () {
@@ -12,14 +10,14 @@ export default function () {
 
     const options = [
         {
-            iconName: "trophy",
-            title: t("side_bar.toplist"),
-            route: "toplist",
-        },
-        {
             iconName: "fire",
             title: t("side_bar.recommend_sheets"),
             route: "recommend-sheets",
+        },
+        {
+            iconName: "trophy",
+            title: t("side_bar.toplist"),
+            route: "toplist",
         },
         {
             iconName: "array-download-tray",
@@ -32,9 +30,9 @@ export default function () {
             route: "music-tag",
         },
         {
-            iconName: "folder-open",
-            title: t("side_bar.local_music"),
-            route: "local-music",
+            iconName: "musical-note",
+            title: "音乐管理",
+            route: "music-manage",
         },
         {
             iconName: "code-bracket-square",
@@ -64,7 +62,7 @@ export default function () {
                 ></ListItem>
             ))}
             <div className="side-bar-section">工具</div>
-            {options.slice(2, 4).map((item) => (
+            {options.slice(2).map((item) => (
                 <ListItem
                     key={item.route}
                     iconName={item.iconName}
@@ -75,20 +73,6 @@ export default function () {
                     }}
                 ></ListItem>
             ))}
-            <div className="side-bar-section">库</div>
-            {options.slice(4).map((item) => (
-                <ListItem
-                    key={item.route}
-                    iconName={item.iconName}
-                    title={item.title}
-                    selected={routePathMatch?.params?.routePath === item.route}
-                    onClick={() => {
-                        navigate(`/main/${item.route}`);
-                    }}
-                ></ListItem>
-            ))}
-            <MySheets></MySheets>
-            <StarredSheets></StarredSheets>
         </div>
     );
 }

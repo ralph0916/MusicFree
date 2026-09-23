@@ -158,9 +158,36 @@ function paginateOffset(page) {
   return Math.max(0, (page - 1) * PAGE_SIZE);
 }
 
+async function listAllPlaylists() {
+  const res = await request("getPlaylists");
+  return {
+    playlists: (res.data.playlists && res.data.playlists.playlist) || [],
+    auth: res.auth,
+    baseUrl: res.baseUrl,
+  };
+}
+
+async function findOrCreatePlaylistByName(name) {
+  const listed = await listAllPlaylists();
+  let found = listed.playlists.find(function (item) {
+    return String(item.name) === name;
+  });
+  if (!found) {
+    await request("createPlaylist", { name: name });
+    const again = await listAllPlaylists();
+    found = again.playlists.find(function (item) {
+      return String(item.name) === name;
+    });
+  }
+  if (!found) {
+    throw new Error("无法创建歌单「" + name + "」");
+  }
+  return found;
+}
+
 module.exports = {
   platform: PLATFORM,
-  version: "1.0.0",
+  version: "1.1.0",
   appVersion: ">0.6.0",
   description:
     "连接自建 Navidrome / Subsonic 兼容服务器，播放 NAS 本地音乐库。",
@@ -371,73 +398,122 @@ module.exports = {
     };
   },
   async getRecommendSheetTags() {
+    // 与移动端首页 SongFeed 一致：分类单曲列表
     return {
       pinned: [
-        { id: "recent", title: "最近添加", platform: PLATFORM },
-        { id: "random", title: "随机专辑", platform: PLATFORM },
-        { id: "starred", title: "我的收藏", platform: PLATFORM },
-        { id: "playlists", title: "全部歌单", platform: PLATFORM },
+        { id: "喜欢", title: "喜欢", platform: PLATFORM },
+        { id: "全部", title: "全部", platform: PLATFORM },
+        { id: "收藏", title: "收藏", platform: PLATFORM },
+        { id: "车载", title: "车载", platform: PLATFORM },
+        { id: "听腻了", title: "听腻了", platform: PLATFORM },
       ],
-      data: [
-        {
-          title: "浏览",
-          data: [
-            { id: "frequent", title: "常听专辑" },
-            { id: "newest", title: "最新专辑" },
-            { id: "alphabeticalByName", title: "专辑名排序" },
-            { id: "alphabeticalByArtist", title: "歌手排序" },
-          ],
-        },
-      ],
+      data: [],
     };
   },
-  async getRecommendSheetsByTag(tag, page) {
+  async getRecommendSheetsByTag() {
+    // Navidrome 热门歌单走歌曲列表（getTopListDetail），此处占位
+    return { isEnd: true, data: [] };
+  },
+  async getTopLists() {
+    return [
+      {
+        title: "歌单",
+        data: [
+          { id: "喜欢", title: "喜欢", description: "喜欢歌单", coverImg: "" },
+          { id: "全部", title: "全部", description: "全部单曲", coverImg: "" },
+          { id: "收藏", title: "收藏", description: "收藏歌单", coverImg: "" },
+          { id: "车载", title: "车载", description: "车载歌单", coverImg: "" },
+          { id: "听腻了", title: "听腻了", description: "听腻了歌单", coverImg: "" },
+        ],
+      },
+    ];
+  },
+  async getTopListDetail(topListItem, page) {
     page = page || 1;
-    const tagId = (tag && tag.id) || "recent";
-    if (tagId === "playlists") {
-      const res = await request("getPlaylists");
-      const playlists = (res.data.playlists && res.data.playlists.playlist) || [];
-      const start = paginateOffset(page);
-      const slice = playlists.slice(start, start + PAGE_SIZE);
+    const id = String(topListItem && topListItem.id);
+
+    if (id === "全部" || id === "songs-all" || id === "songs-recent") {
+      const res = await request("search3", {
+        query: "",
+        songCount: PAGE_SIZE,
+        albumCount: 0,
+        artistCount: 0,
+        songOffset: paginateOffset(page),
+      });
+      const songs =
+        (res.data.searchResult3 && res.data.searchResult3.song) || [];
       return {
-        isEnd: start + slice.length >= playlists.length,
-        data: slice.map(function (item) {
-          return mapPlaylist(item, res.baseUrl, res.auth);
+        isEnd: songs.length < PAGE_SIZE,
+        musicList: songs.map(function (item) {
+          return mapSong(item, res.baseUrl, res.auth);
         }),
       };
     }
-    if (tagId === "starred") {
+
+    if (
+      id === "喜欢" ||
+      id === "收藏" ||
+      id === "车载" ||
+      id === "听腻了" ||
+      id.indexOf("playlist:") === 0
+    ) {
+      const name = id.indexOf("playlist:") === 0 ? id.slice(9) : id;
+      const playlist = await findOrCreatePlaylistByName(name);
+      const res = await request("getPlaylist", { id: playlist.id });
+      const entries = (res.data.playlist && res.data.playlist.entry) || [];
+      const start = paginateOffset(page);
+      const slice = entries.slice(start, start + PAGE_SIZE);
+      return {
+        isEnd: start + slice.length >= entries.length,
+        musicList: slice.map(function (item) {
+          return mapSong(item, res.baseUrl, res.auth);
+        }),
+      };
+    }
+
+    if (id === "songs-starred" || id === "starred") {
       const res = await request("getStarred2");
-      const albums = (res.data.starred2 && res.data.starred2.album) || [];
+      const songs = (res.data.starred2 && res.data.starred2.song) || [];
       const start = paginateOffset(page);
-      const slice = albums.slice(start, start + PAGE_SIZE);
+      const slice = songs.slice(start, start + PAGE_SIZE);
       return {
-        isEnd: start + slice.length >= albums.length,
-        data: slice.map(function (item) {
-          return mapAlbumAsSheet(item, res.baseUrl, res.auth);
+        isEnd: start + slice.length >= songs.length,
+        musicList: slice.map(function (item) {
+          return mapSong(item, res.baseUrl, res.auth);
         }),
       };
     }
-    const typeMap = {
-      recent: "recent",
-      random: "random",
-      frequent: "frequent",
-      newest: "newest",
-      alphabeticalByName: "alphabeticalByName",
-      alphabeticalByArtist: "alphabeticalByArtist",
-    };
-    const res = await request("getAlbumList2", {
-      type: typeMap[tagId] || "recent",
-      size: PAGE_SIZE,
-      offset: paginateOffset(page),
-    });
-    const albums = (res.data.albumList2 && res.data.albumList2.album) || [];
-    return {
-      isEnd: albums.length < PAGE_SIZE,
-      data: albums.map(function (item) {
-        return mapAlbumAsSheet(item, res.baseUrl, res.auth);
-      }),
-    };
+
+    if (id === "songs-random") {
+      const res = await request("getRandomSongs", { size: PAGE_SIZE });
+      const songs =
+        (res.data.randomSongs && res.data.randomSongs.song) || [];
+      return {
+        isEnd: true,
+        musicList: songs.map(function (item) {
+          return mapSong(item, res.baseUrl, res.auth);
+        }),
+      };
+    }
+
+    try {
+      const res = await request("getPlaylist", { id: id });
+      if (res.data.playlist) {
+        const entries = res.data.playlist.entry || [];
+        const start = paginateOffset(page);
+        const slice = entries.slice(start, start + PAGE_SIZE);
+        return {
+          isEnd: start + slice.length >= entries.length,
+          musicList: slice.map(function (item) {
+            return mapSong(item, res.baseUrl, res.auth);
+          }),
+        };
+      }
+    } catch (e) {
+      // fallthrough
+    }
+
+    return { isEnd: true, musicList: [] };
   },
   async importMusicSheet(urlLike) {
     const text = (urlLike || "").trim();

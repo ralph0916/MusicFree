@@ -16,6 +16,18 @@ export default function useBootstrap() {
             navigate(route);
         });
 
+        // 默认进入热门歌单
+        const hash = window.location.hash || "";
+        if (
+            !hash ||
+            hash === "#" ||
+            hash === "#/" ||
+            hash === "#/main" ||
+            hash === "#/main/"
+        ) {
+            navigate("/main/recommend-sheets", { replace: true });
+        }
+
         logger.logPerf("Bundle First Screen");
     }, []);
 }

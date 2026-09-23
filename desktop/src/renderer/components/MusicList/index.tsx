@@ -31,6 +31,8 @@ import DragReceiver, { startDrag } from "../DragReceiver";
 import { i18n } from "@/shared/i18n/renderer";
 import AppConfig from "@shared/app-config/renderer";
 import { shellUtil } from "@shared/utils/renderer";
+import albumImg from "@/assets/imgs/album-cover.jpg";
+import { setFallbackAlbum } from "@/renderer/utils/img-on-error";
 
 interface IMusicListProps {
     /** 展示的播放列表 */
@@ -51,7 +53,14 @@ interface IMusicListProps {
     };
     containerStyle?: CSSProperties;
     hideRows?: Array<
-        "like" | "index" | "title" | "artist" | "album" | "duration" | "platform"
+        | "like"
+        | "artwork"
+        | "index"
+        | "title"
+        | "artist"
+        | "album"
+        | "duration"
+        | "platform"
     >;
     /** 允许拖拽 */
     enableDrag?: boolean;
@@ -76,6 +85,24 @@ const columnDef: ColumnDef<IMusic.IMusicItem>[] = [
         enableResizing: false,
         enableSorting: false,
     }),
+    columnHelper.display({
+        id: "artwork",
+        size: 52,
+        minSize: 52,
+        maxSize: 52,
+        header: "",
+        cell: (info) => (
+            <img
+                className="music-list-artwork"
+                src={info.row.original.artwork || albumImg}
+                onError={setFallbackAlbum}
+                alt=""
+                draggable={false}
+            />
+        ),
+        enableResizing: false,
+        enableSorting: false,
+    }),
     columnHelper.accessor((_, index) => index + 1, {
         cell: (info) => info.getValue(),
         header: "#",
@@ -94,6 +121,8 @@ const columnDef: ColumnDef<IMusic.IMusicItem>[] = [
             const title = info?.getValue?.();
             return <span title={title}>{title}</span>;
         },
+        sortingFn: (a, b) =>
+            (a.original.title || "").localeCompare(b.original.title || "", "zh"),
         // @ts-ignore
         fr: 3,
     }),
@@ -104,6 +133,11 @@ const columnDef: ColumnDef<IMusic.IMusicItem>[] = [
         maxSize: 200,
         minSize: 60,
         cell: (info) => <span title={info.getValue()}>{info.getValue()}</span>,
+        sortingFn: (a, b) =>
+            (a.original.artist || "").localeCompare(
+                b.original.artist || "",
+                "zh",
+            ),
         // @ts-ignore
         fr: 2,
     }),
@@ -113,31 +147,52 @@ const columnDef: ColumnDef<IMusic.IMusicItem>[] = [
         maxSize: 200,
         minSize: 60,
         cell: (info) => <span title={info.getValue()}>{info.getValue()}</span>,
+        sortingFn: (a, b) =>
+            (a.original.album || "").localeCompare(b.original.album || "", "zh"),
         // @ts-ignore
         fr: 2,
     }),
     columnHelper.accessor("duration", {
         header: () => i18n.t("media.media_duration"),
-        size: 64,
-        maxSize: 150,
-        minSize: 48,
+        size: 72,
+        maxSize: 88,
+        minSize: 64,
         cell: (info) =>
             info.getValue() ? secondsToDuration(info.getValue()) : "--:--",
-        // @ts-ignore
-        fr: 1,
+        enableResizing: false,
     }),
     columnHelper.accessor("platform", {
         header: () => i18n.t("media.media_platform"),
-        size: 100,
-        minSize: 80,
-        maxSize: 300,
+        size: 108,
+        minSize: 96,
+        maxSize: 120,
         cell: (info) => <Tag fill>{info.getValue()}</Tag>,
-        // @ts-ignore
-        fr: 1,
+        enableResizing: false,
+        enableSorting: false,
     }),
 ];
 
-const estimizeItemHeight = 2.6 * 13; // lineheight 2.6rem
+/** 固定列像素宽；其余按 fr 分配剩余宽度 */
+const FIXED_COL_IDS = new Set(["like", "artwork", "index", "duration", "platform"]);
+
+function getColWidthStyle(
+    columnId: string,
+    columnDef: ColumnDef<IMusic.IMusicItem>,
+) {
+    if (FIXED_COL_IDS.has(columnId)) {
+        const size = columnDef.size ?? 80;
+        return { width: size, minWidth: size, maxWidth: size };
+    }
+    const fr = (columnDef as any).fr as number | undefined;
+    if (fr) {
+        // title3 / artist2 / album2
+        const pct = Math.round((fr / 7) * 100);
+        return { width: `${pct}%` };
+    }
+    return { width: columnDef.size };
+}
+
+const estimizeItemHeight = 3.6 * 13; // taller rows for artwork
 
 export function showMusicContextMenu(
     musicItems: IMusic.IMusicItem | IMusic.IMusicItem[],
@@ -180,7 +235,7 @@ export function showMusicContextMenu(
             },
         },
         {
-            title: i18n.t("music_list_context_menu.add_to_my_sheets"),
+            title: "添加到歌单",
             icon: "document-plus",
             onClick() {
                 showModal("AddMusicToSheet", {
@@ -359,6 +414,7 @@ function _MusicList(props: IMusicListProps) {
                 style={{
                     height: virtualController.totalHeight + estimizeItemHeight,
                     tableLayout: "fixed",
+                    width: "100%",
                 }}
             >
                 <thead>
@@ -367,13 +423,10 @@ function _MusicList(props: IMusicListProps) {
                             <th
                                 key={header.id}
                                 data-id={header.id}
-                                style={{
-                                //@ts-ignore
-                                    width: header.column.columnDef.fr
-                                        ? //@ts-ignore
-                                        `${header.column.columnDef.fr * 100}%`
-                                        : header.column.columnDef.size,
-                                }}
+                                style={getColWidthStyle(
+                                    header.id,
+                                    header.column.columnDef,
+                                )}
                                 onClick={header.column.getToggleSortingHandler()}
                             >
                                 {flexRender(
@@ -516,13 +569,11 @@ function _MusicList(props: IMusicListProps) {
                                 {row.getVisibleCells().map((cell) => (
                                     <td
                                         key={cell.id}
-                                        style={{
-                                        //@ts-ignore
-                                            width: cell.column.columnDef.fr
-                                                ? //@ts-ignore
-                                                `${cell.column.columnDef.fr * 100}%`
-                                                : cell.column.columnDef.size,
-                                        }}
+                                        data-id={cell.column.id}
+                                        style={getColWidthStyle(
+                                            cell.column.id,
+                                            cell.column.columnDef,
+                                        )}
                                     >
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </td>

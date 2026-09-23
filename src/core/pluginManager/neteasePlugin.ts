@@ -515,6 +515,29 @@ export async function addSongsToNeteasePlaylist(
     return true;
 }
 
+export async function removeSongsFromNeteasePlaylist(
+    playlistId: string,
+    songIds: string[],
+) {
+    if (!isNeteaseLoggedIn()) {
+        throw new Error("请先登录网易云账号");
+    }
+    const ids = songIds.map(String);
+    const data = await neteaseWeapiPost(
+        "https://music.163.com/weapi/playlist/manipulate/tracks",
+        {
+            op: "del",
+            pid: playlistId,
+            trackIds: JSON.stringify(ids),
+            tracks: JSON.stringify(ids),
+        },
+    );
+    if (data?.code !== 200 && data?.code !== 502) {
+        throw new Error(data?.message || "移出歌单失败");
+    }
+    return true;
+}
+
 export async function deleteNeteasePlaylist(playlistId: string) {
     if (!isNeteaseLoggedIn()) {
         throw new Error("请先登录网易云账号");

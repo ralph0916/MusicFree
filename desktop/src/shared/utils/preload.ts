@@ -58,7 +58,7 @@ async function getPath(pathName: "home" | "appData" | "userData" | "sessionData"
     return await ipcRenderer.invoke("@shared/utils/app-get-path", pathName);
 }
 
-async function checkUpdate() {
+async function checkUpdate(): Promise<null> {
     // 已禁用上游更新检查
     return null;
 }
@@ -71,12 +71,30 @@ async function clearCache() {
     ipcRenderer.send("@shared/utils/clear-cache");
 }
 
+async function httpRequest(options: {
+    url: string;
+    method?: string;
+    headers?: Record<string, string>;
+    params?: Record<string, any>;
+    data?: any;
+    responseType?: "json" | "text" | "arraybuffer";
+    timeout?: number;
+}): Promise<{ status: number; data: any; setCookie: string[] }> {
+    return await ipcRenderer.invoke("@shared/utils/http-request", options);
+}
+
+function flacSetDownloadName(name: string) {
+    ipcRenderer.send("@shared/utils/flac-set-download-name", name);
+}
+
 const app = {
     exitApp,
     getPath,
     checkUpdate,
     getCacheSize,
     clearCache,
+    httpRequest,
+    flacSetDownloadName,
 };
 
 
